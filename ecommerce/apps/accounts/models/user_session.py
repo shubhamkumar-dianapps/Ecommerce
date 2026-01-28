@@ -1,6 +1,5 @@
 import uuid
 from django.db import models
-from django.utils import timezone
 from .user import User
 
 
@@ -32,8 +31,7 @@ class UserSession(models.Model):
         self.save(update_fields=["is_active"])
 
     def update_activity(self):
-        """Update last activity timestamp"""
-        self.last_activity = timezone.now()
+        """Update last activity timestamp (auto_now handles the value)"""
         self.save(update_fields=["last_activity"])
 
     def __str__(self):

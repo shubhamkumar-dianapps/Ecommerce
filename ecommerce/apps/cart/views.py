@@ -1,34 +1,39 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from apps.cart.models import Cart, CartItem
+from apps.cart.models import Cart, Product
 from apps.cart.serializers import CartSerializer
-from apps.products.models import Product
+from apps.cart.services import CartService
 
 
 class CartViewSet(viewsets.ViewSet):
+    """
+    Cart management viewset.
+
+    Endpoints:
+        GET  /api/cart/          - Get user's cart
+        POST /api/cart/add_item/ - Add item to cart
+        POST /api/cart/update_item/ - Update item quantity
+        POST /api/cart/remove_item/ - Remove item from cart
+        POST /api/cart/clear/    - Clear all items
+    """
+
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        cart, _ = Cart.objects.get_or_create(user=request.user)
+        """Get user's cart."""
+        cart = CartService.get_or_create_cart(request.user)
         serializer = CartSerializer(cart, context={"request": request})
         return Response(serializer.data)
 
     @action(detail=False, methods=["post"])
     def add_item(self, request):
-        cart, _ = Cart.objects.get_or_create(user=request.user)
+        """Add an item to the cart."""
         product_id = request.data.get("product_id")
         quantity = request.data.get("quantity", 1)
 
         try:
-            product = Product.objects.get(id=product_id)
-            cart_item, created = CartItem.objects.get_or_create(
-                cart=cart, product=product, defaults={"quantity": quantity}
-            )
-            if not created:
-                cart_item.quantity += quantity
-                cart_item.save()
-
+            cart, created = CartService.add_item(request.user, product_id, quantity)
             serializer = CartSerializer(cart, context={"request": request})
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Product.DoesNotExist:
@@ -40,41 +45,49 @@ class CartViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["post"])
     def update_item(self, request):
-        cart = Cart.objects.get(user=request.user)
+        """Update the quantity of a cart item."""
         item_id = request.data.get("item_id")
         quantity = request.data.get("quantity")
 
         try:
-            cart_item = CartItem.objects.get(id=item_id, cart=cart)
-            cart_item.quantity = quantity
-            cart_item.save()
+            cart = CartService.update_item(request.user, item_id, quantity)
             serializer = CartSerializer(cart, context={"request": request})
             return Response(serializer.data)
-        except CartItem.DoesNotExist:
+        except Cart.DoesNotExist:
             return Response(
-                {"error": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Cart not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        except ValueError as e:
+        except Exception as e:
+            if "CartItem" in str(type(e).__name__) or "DoesNotExist" in str(e):
+                return Response(
+                    {"error": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND
+                )
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["post"])
     def remove_item(self, request):
-        cart = Cart.objects.get(user=request.user)
+        """Remove an item from the cart."""
         item_id = request.data.get("item_id")
 
         try:
-            cart_item = CartItem.objects.get(id=item_id, cart=cart)
-            cart_item.delete()
+            cart = CartService.remove_item(request.user, item_id)
             serializer = CartSerializer(cart, context={"request": request})
             return Response(serializer.data)
-        except CartItem.DoesNotExist:
-            return Response(
-                {"error": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+        except Exception as e:
+            if "DoesNotExist" in str(e):
+                return Response(
+                    {"error": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND
+                )
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["post"])
     def clear(self, request):
-        cart = Cart.objects.get(user=request.user)
-        cart.clear()
-        serializer = CartSerializer(cart, context={"request": request})
-        return Response(serializer.data)
+        """Clear all items from the cart."""
+        try:
+            cart = CartService.clear_cart(request.user)
+            serializer = CartSerializer(cart, context={"request": request})
+            return Response(serializer.data)
+        except Cart.DoesNotExist:
+            return Response(
+                {"error": "Cart not found"}, status=status.HTTP_404_NOT_FOUND
+            )

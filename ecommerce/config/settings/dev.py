@@ -1,7 +1,8 @@
 from .base import *  # noqa: F403
 
 
-DEBUG = False
+# Enable debug mode for development - allows static file serving
+DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 

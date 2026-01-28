@@ -37,7 +37,7 @@ class AddressViewSet(viewsets.ModelViewSet):
         POST   /api/addresses/{id}/set-default/ - Set as default
 
     Features:
-        - Pagination (default: 10 per page)
+        - Pagination (default: 5 per page)
         - Filtering by address_type, is_default, city
         - Ordering by created_at, is_default
         - Only user's own addresses visible

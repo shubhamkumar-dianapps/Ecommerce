@@ -120,103 +120,73 @@ def handler404(request, exception=None):
     """
     Custom 404 handler for all requests.
 
-    Returns JSON for API requests, HTML for others.
+    Returns JSON response for all requests (API-only backend).
     """
-    # Check if it's an API request
-    if request.path.startswith("/api/"):
-        return JsonResponse(
-            {
-                "error": True,
-                "status_code": 404,
-                "message": "Endpoint not found",
-                "details": {
-                    "path": request.path,
-                    "method": request.method,
-                    "error": f"The endpoint {request.path} does not exist",
-                },
+    return JsonResponse(
+        {
+            "error": True,
+            "status_code": 404,
+            "message": "Not found",
+            "details": {
+                "path": request.path,
+                "method": request.method,
+                "error": f"The requested resource {request.path} does not exist",
             },
-            status=404,
-        )
-
-    # Return HTML for non-API requests
-    from django.shortcuts import render
-
-    return render(request, "404.html", status=404)
+        },
+        status=404,
+    )
 
 
 def handler500(request):
     """
     Custom 500 handler for all requests.
 
-    Returns JSON for API requests, HTML for others.
+    Returns JSON response for all requests (API-only backend).
     """
-    # Check if it's an API request
-    if request.path.startswith("/api/"):
-        return JsonResponse(
-            {
-                "error": True,
-                "status_code": 500,
-                "message": "Internal server error",
-                "details": {
-                    "error": "An unexpected error occurred. Our team has been notified."
-                },
+    return JsonResponse(
+        {
+            "error": True,
+            "status_code": 500,
+            "message": "Internal server error",
+            "details": {
+                "error": "An unexpected error occurred. Our team has been notified."
             },
-            status=500,
-        )
-
-    # Return HTML for non-API requests
-    from django.shortcuts import render
-
-    return render(request, "500.html", status=500)
+        },
+        status=500,
+    )
 
 
 def handler403(request, exception=None):
     """
     Custom 403 handler for all requests.
 
-    Returns JSON for API requests, HTML for others.
+    Returns JSON response for all requests (API-only backend).
     """
-    # Check if it's an API request
-    if request.path.startswith("/api/"):
-        return JsonResponse(
-            {
-                "error": True,
-                "status_code": 403,
-                "message": "Permission denied",
-                "details": {
-                    "error": "You do not have permission to access this resource"
-                },
-            },
-            status=403,
-        )
-
-    # Return HTML for non-API requests
-    from django.shortcuts import render
-
-    return render(request, "403.html", status=403)
+    return JsonResponse(
+        {
+            "error": True,
+            "status_code": 403,
+            "message": "Permission denied",
+            "details": {"error": "You do not have permission to access this resource"},
+        },
+        status=403,
+    )
 
 
 def handler400(request, exception=None):
     """
     Custom 400 handler for all requests.
 
-    Returns JSON for API requests, HTML for others.
+    Returns JSON response for all requests (API-only backend).
     """
-    # Check if it's an API request
-    if request.path.startswith("/api/"):
-        return JsonResponse(
-            {
-                "error": True,
-                "status_code": 400,
-                "message": "Bad request",
-                "details": {
-                    "error": "The request could not be understood or was malformed"
-                },
+    return JsonResponse(
+        {
+            "error": True,
+            "status_code": 400,
+            "message": "Bad request",
+            "details": {
+                "error": "The request could not be understood or was malformed"
             },
-            status=400,
-        )
-
-    # Return HTML for non-API requests
-    from django.shortcuts import render
-
-    return render(request, "400.html", status=400)
+        },
+        status=400,
+    )

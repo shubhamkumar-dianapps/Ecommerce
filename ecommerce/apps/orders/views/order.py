@@ -1,17 +1,27 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from apps.orders.models import Order
 from apps.orders.serializers.order import OrderSerializer, CheckoutSerializer
 from apps.orders.services.checkout_service import CheckoutService
+from apps.orders.services.order_service import OrderService
 
 
 class OrderViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Order management viewset.
+
+    Endpoints:
+        GET  /api/orders/             - List user's orders
+        GET  /api/orders/{id}/        - Get order details
+        POST /api/orders/checkout/    - Create order from cart
+        POST /api/orders/{id}/cancel/ - Cancel order
+    """
+
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user).prefetch_related("items")
+        return OrderService.get_user_orders(self.request.user)
 
     @action(detail=False, methods=["post"])
     def checkout(self, request):
@@ -35,19 +45,11 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
     def cancel(self, request, pk=None):
         """Cancel an order"""
         order = self.get_object()
-        if order.status in [Order.OrderStatus.DELIVERED, Order.OrderStatus.CANCELLED]:
-            return Response(
-                {"error": "Cannot cancel this order"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
-        order.status = Order.OrderStatus.CANCELLED
+        success, message = OrderService.cancel_order(order)
 
-        # Release reserved inventory
-        for item in order.items.all():
-            if hasattr(item.product, "inventory"):
-                item.product.inventory.release(item.quantity)
-
-        order.save()
-        serializer = OrderSerializer(order)
-        return Response(serializer.data)
+        if success:
+            serializer = OrderSerializer(order)
+            return Response(serializer.data)
+        else:
+            return Response({"error": message}, status=status.HTTP_400_BAD_REQUEST)
