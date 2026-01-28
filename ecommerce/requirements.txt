@@ -1,0 +1,8 @@
+django>=5.0
+djangorestframework
+djangorestframework-simplejwt
+django-filter
+django-environ
+pillow
+drf-spectacular # For API documentation
+django-cors-headers

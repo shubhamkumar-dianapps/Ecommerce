@@ -1,0 +1,93 @@
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils import timezone
+from apps.accounts.models import EmailVerificationToken
+
+
+class EmailService:
+    """Service for handling email verification"""
+
+    @staticmethod
+    def send_verification_email(user):
+        """
+        Create a verification token and send verification email to user.
+        Returns the created token.
+        """
+        # Create verification token
+        token = EmailVerificationToken.objects.create(user=user)
+
+        # Build verification URL (customize based on your frontend)
+        verification_url = f"{settings.FRONTEND_URL}/verify-email/{token.token}"
+
+        # Send email
+        subject = "Verify your email address"
+        message = f"""
+        Hi {user.email},
+        
+        Please click the link below to verify your email address:
+        {verification_url}
+        
+        This link will expire in 24 hours.
+        
+        If you didn't create an account, please ignore this email.
+        
+        Thanks,
+        The Team
+        """
+
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
+
+        return token
+
+    @staticmethod
+    def verify_email(token_value):
+        """
+        Verify email using token.
+        Returns (success: bool, message: str, user: User|None)
+        """
+        try:
+            token = EmailVerificationToken.objects.get(token=token_value)
+
+            if not token.is_valid():
+                if token.is_used:
+                    return False, "This verification link has already been used", None
+                else:
+                    return False, "This verification link has expired", None
+
+            # Mark token as used
+            token.mark_as_used()
+
+            # Mark user email as verified
+            user = token.user
+            user.email_verified = True
+            user.save(update_fields=["email_verified"])
+
+            return True, "Email verified successfully", user
+
+        except EmailVerificationToken.DoesNotExist:
+            return False, "Invalid verification link", None
+
+    @staticmethod
+    def resend_verification_email(user):
+        """
+        Resend verification email.
+        Invalidates old tokens and creates a new one.
+        """
+        if user.email_verified:
+            return False, "Email is already verified"
+
+        # Invalidate old unused tokens
+        EmailVerificationToken.objects.filter(
+            user=user, is_used=False, expires_at__gt=timezone.now()
+        ).update(is_used=True)
+
+        # Send new verification email
+        EmailService.send_verification_email(user)
+
+        return True, "Verification email sent"
