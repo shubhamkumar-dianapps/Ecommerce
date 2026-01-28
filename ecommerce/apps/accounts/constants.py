@@ -81,3 +81,12 @@ AUDIT_ACTION_PASSWORD_CHANGE = "PASSWORD_CHANGE"
 AUDIT_ACTION_EMAIL_VERIFICATION = "EMAIL_VERIFICATION"
 AUDIT_ACTION_ACCOUNT_CREATED = "ACCOUNT_CREATED"
 AUDIT_ACTION_SESSION_REVOKED = "SESSION_REVOKED"
+
+# Authentication
+
+AUTH_RATE = "5/m"
+AUTH_RATE_MESSAGE = "Too many authentication attempts. Please try again in a minute."
+MAX_ACTIVE_SESSIONS_PER_USER = 5
+MAX_ACTIVE_SESSIONS_EXCEEDED = (
+    "Maximum active sessions limit reached. Please logout from another device first."
+)

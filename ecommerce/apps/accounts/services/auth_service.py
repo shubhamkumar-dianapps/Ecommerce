@@ -70,3 +70,18 @@ class AuthService:
         else:
             ip = request.META.get("REMOTE_ADDR")
         return ip
+
+    @staticmethod
+    def count_active_sessions(user) -> int:
+        """Count active sessions for a user"""
+        return UserSession.objects.filter(user=user, is_active=True).count()
+
+    @staticmethod
+    def has_max_active_sessions(user) -> bool:
+        """Check if user has reached maximum active sessions limit"""
+        from apps.accounts import constants
+
+        return (
+            AuthService.count_active_sessions(user)
+            >= constants.MAX_ACTIVE_SESSIONS_PER_USER
+        )

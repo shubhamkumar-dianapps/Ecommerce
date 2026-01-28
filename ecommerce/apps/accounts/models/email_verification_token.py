@@ -1,7 +1,8 @@
 import uuid
+from datetime import timedelta
 from django.db import models
 from django.utils import timezone
-from datetime import timedelta
+from apps.accounts import constants
 from .user import User
 
 
@@ -29,7 +30,9 @@ class EmailVerificationToken(models.Model):
     def save(self, *args, **kwargs):
         # Set expiration to 24 hours from creation if not set
         if not self.expires_at:
-            self.expires_at = timezone.now() + timedelta(hours=24)
+            self.expires_at = timezone.now() + timedelta(
+                hours=constants.EMAIL_VERIFICATION_EXPIRY_HOURS
+            )
         super().save(*args, **kwargs)
 
     def is_valid(self):

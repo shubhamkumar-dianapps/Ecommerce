@@ -7,6 +7,7 @@ Uses mixins for DRY principles and follows REST best practices.
 
 from typing import Dict, Any
 from rest_framework import status, generics
+from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -25,7 +26,7 @@ from apps.accounts import constants
 class AuthThrottle(AnonRateThrottle):
     """Custom throttle for auth endpoints to prevent brute force attacks"""
 
-    rate = "5/minute"
+    rate = constants.AUTH_RATE
     scope = "auth"
 
 
@@ -124,6 +125,16 @@ class LoginView(TokenObtainPairView):
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid()
             user = serializer.user
+
+            # Check if User has count of active sessions
+            if (
+                AuthService.count_active_sessions(user)
+                >= constants.MAX_ACTIVE_SESSIONS_PER_USER
+            ):
+                return Response(
+                    {"error": constants.MAX_ACTIVE_SESSIONS_EXCEEDED},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
 
             # Create session and get tokens
             session, tokens = AuthService.create_session(user, request)
