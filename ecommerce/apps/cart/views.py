@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from apps.cart.models import Cart, Product
 from apps.cart.serializers import CartSerializer
 from apps.cart.services import CartService
+from apps.accounts.permissions import IsCustomer
 
 
 class CartViewSet(viewsets.ViewSet):
@@ -16,9 +17,12 @@ class CartViewSet(viewsets.ViewSet):
         POST /api/cart/update_item/ - Update item quantity
         POST /api/cart/remove_item/ - Remove item from cart
         POST /api/cart/clear/    - Clear all items
+
+    Permissions:
+        - Only authenticated customers can access cart
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsCustomer]
 
     def list(self, request):
         """Get user's cart."""

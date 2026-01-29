@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from apps.orders.serializers.order import OrderSerializer, CheckoutSerializer
 from apps.orders.services.checkout_service import CheckoutService
 from apps.orders.services.order_service import OrderService
+from apps.accounts.permissions import IsCustomer
 
 
 class OrderViewSet(viewsets.ReadOnlyModelViewSet):
@@ -15,10 +16,13 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
         GET  /api/orders/{id}/        - Get order details
         POST /api/orders/checkout/    - Create order from cart
         POST /api/orders/{id}/cancel/ - Cancel order
+
+    Permissions:
+        - Only authenticated customers can access orders
     """
 
     serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsCustomer]
 
     def get_queryset(self):
         return OrderService.get_user_orders(self.request.user)

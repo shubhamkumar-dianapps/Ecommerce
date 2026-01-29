@@ -10,3 +10,6 @@ class ShopKeeperProfile(TimeStampedModel):
     shop_name = models.CharField(max_length=255)
     gst_number = models.CharField(max_length=15, unique=True)
     is_verified = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.shop_name}"

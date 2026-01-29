@@ -10,5 +10,8 @@ db.sqlite3
 *.swp
 .vscode/
 .idea/
+
 venv/
 env/
+.order
+.cart  
