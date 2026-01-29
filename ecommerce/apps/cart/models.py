@@ -33,7 +33,7 @@ class CartItem(TimeStampedModel):
         unique_together = ("cart", "product")
 
     def __str__(self):
-        return f"{self.quantity}x {self.product.name}"
+        return f"{self.quantity} x {self.product.name}"
 
     @property
     def total_price(self):
