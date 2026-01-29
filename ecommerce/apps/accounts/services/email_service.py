@@ -2,6 +2,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 from apps.accounts.models import EmailVerificationToken
+from apps.accounts import constants
 
 
 class EmailService:
@@ -19,21 +20,13 @@ class EmailService:
         # Build verification URL (customize based on your frontend)
         verification_url = f"{settings.FRONTEND_URL}/verify-email/{token.token}"
 
-        # Send email
-        subject = "Verify your email address"
-        message = f"""
-        Hi {user.email},
-        
-        Please click the link below to verify your email address:
-        {verification_url}
-        
-        This link will expire in 24 hours.
-        
-        If you didn't create an account, please ignore this email.
-        
-        Thanks,
-        The Team
-        """
+        # Build email from template
+        subject = constants.EMAIL_SUBJECT_VERIFICATION
+        message = constants.EMAIL_VERIFICATION_TEMPLATE.format(
+            email=user.email,
+            verification_url=verification_url,
+            expiry_hours=constants.EMAIL_VERIFICATION_EXPIRY_HOURS,
+        )
 
         send_mail(
             subject,
