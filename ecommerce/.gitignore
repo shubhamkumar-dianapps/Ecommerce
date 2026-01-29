@@ -14,4 +14,10 @@ db.sqlite3
 venv/
 env/
 .order
-.cart  
+.cart
+
+# Sensitive Modules (Temporary ignore)
+apps/orders/
+apps/cart/
+apps/shipping/
+apps/payments/
