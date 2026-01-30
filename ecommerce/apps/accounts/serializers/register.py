@@ -215,15 +215,12 @@ class LegacyRegisterSerializer(serializers.ModelSerializer):
 
         user = User.objects.create_user(**validated_data)
 
-        # Profile creation is handled by signals
+        # Profile is created by signal - update directly without extra SELECT
         if user.role == User.Role.SHOPKEEPER:
-            profile = user.shopkeeperprofile
-            profile.shop_name = shop_name
-            profile.gst_number = gst_number
-            profile.save()
+            ShopKeeperProfile.objects.filter(user=user).update(
+                shop_name=shop_name, gst_number=gst_number
+            )
         elif user.role == User.Role.CUSTOMER:
-            profile = user.customerprofile
-            profile.full_name = full_name
-            profile.save()
+            CustomerProfile.objects.filter(user=user).update(full_name=full_name)
 
         return user

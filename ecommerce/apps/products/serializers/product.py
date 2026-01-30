@@ -3,14 +3,12 @@ from apps.products.models import Category, Brand, Product, ProductImage, Invento
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    children_count = serializers.SerializerMethodField()
+    # Uses annotation from queryset - no extra DB query per category!
+    children_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Category
         fields = "__all__"
-
-    def get_children_count(self, obj):
-        return obj.children.count()
 
 
 class BrandSerializer(serializers.ModelSerializer):

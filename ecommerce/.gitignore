@@ -10,5 +10,14 @@ db.sqlite3
 *.swp
 .vscode/
 .idea/
+
 venv/
 env/
+.order
+.cart
+
+# Sensitive Modules (Temporary ignore)
+apps/orders/
+apps/cart/
+apps/shipping/
+apps/payments/

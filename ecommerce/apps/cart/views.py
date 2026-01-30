@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from apps.cart.models import Cart, Product
 from apps.cart.serializers import CartSerializer
 from apps.cart.services import CartService
+from apps.accounts.permissions import IsCustomer
 
 
 class CartViewSet(viewsets.ViewSet):
@@ -16,9 +17,12 @@ class CartViewSet(viewsets.ViewSet):
         POST /api/cart/update_item/ - Update item quantity
         POST /api/cart/remove_item/ - Remove item from cart
         POST /api/cart/clear/    - Clear all items
+
+    Permissions:
+        - Only authenticated customers can access cart
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsCustomer]
 
     def list(self, request):
         """Get user's cart."""
@@ -33,6 +37,8 @@ class CartViewSet(viewsets.ViewSet):
         quantity = request.data.get("quantity", 1)
 
         try:
+            # Convert to int since request.data values are strings
+            quantity = int(quantity) if quantity else 1
             cart, created = CartService.add_item(request.user, product_id, quantity)
             serializer = CartSerializer(cart, context={"request": request})
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -50,6 +56,9 @@ class CartViewSet(viewsets.ViewSet):
         quantity = request.data.get("quantity")
 
         try:
+            # Convert to int since request.data values are strings
+            item_id = int(item_id) if item_id else None
+            quantity = int(quantity) if quantity else None
             cart = CartService.update_item(request.user, item_id, quantity)
             serializer = CartSerializer(cart, context={"request": request})
             return Response(serializer.data)
@@ -70,6 +79,8 @@ class CartViewSet(viewsets.ViewSet):
         item_id = request.data.get("item_id")
 
         try:
+            # Convert to int since request.data values are strings
+            item_id = int(item_id) if item_id else None
             cart = CartService.remove_item(request.user, item_id)
             serializer = CartSerializer(cart, context={"request": request})
             return Response(serializer.data)

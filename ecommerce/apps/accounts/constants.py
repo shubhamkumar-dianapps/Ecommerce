@@ -25,6 +25,49 @@ EMAIL_LINK_EXPIRED = "This verification link has expired"
 EMAIL_LINK_USED = "This verification link has already been used"
 EMAIL_LINK_INVALID = "Invalid verification link"
 
+# Email Templates
+# Use {variable} for placeholders that will be replaced with .format()
+EMAIL_VERIFICATION_TEMPLATE = """
+Hi {email},
+
+Please click the link below to verify your email address:
+{verification_url}
+
+This link will expire in {expiry_hours} hours.
+
+If you didn't create an account, please ignore this email.
+
+Thanks,
+The E-commerce Team
+"""
+
+EMAIL_PASSWORD_RESET_SUBJECT = "Reset your password"
+EMAIL_PASSWORD_RESET_TEMPLATE = """
+Hi {email},
+
+You requested to reset your password. Click the link below:
+{reset_url}
+
+This link will expire in {expiry_hours} hours.
+
+If you didn't request this, please ignore this email.
+
+Thanks,
+The E-commerce Team
+"""
+
+EMAIL_WELCOME_SUBJECT = "Welcome to E-commerce!"
+EMAIL_WELCOME_TEMPLATE = """
+Hi {email},
+
+Welcome to our platform! Your {role} account has been created successfully.
+
+{additional_message}
+
+Thanks,
+The E-commerce Team
+"""
+
 # Registration Messages
 CUSTOMER_REGISTRATION_SUCCESS = "{role} account created successfully. Please check your email to verify your account."
 SHOPKEEPER_VERIFICATION_NOTICE = (
