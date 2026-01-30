@@ -7,7 +7,6 @@ Uses mixins for DRY principles and follows REST best practices.
 
 from typing import Dict, Any
 from rest_framework import status, generics
-from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -99,6 +98,7 @@ class LoginView(TokenObtainPairView):
     POST /api/v1/accounts/login/
 
     Authenticates user and returns JWT tokens with session tracking.
+    If max sessions reached, oldest session is auto-invalidated.
     """
 
     serializer_class = LoginSerializer
@@ -120,39 +120,38 @@ class LoginView(TokenObtainPairView):
         # Get the response from parent class
         response = super().post(request, *args, **kwargs)
 
-        if response.status_code == status.HTTP_200_OK:
-            # Extract user from serializer
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid()
-            user = serializer.user
+        if response.status_code != status.HTTP_200_OK:
+            return response
 
-            # Check if User has count of active sessions
-            if (
-                AuthService.count_active_sessions(user)
-                >= constants.MAX_ACTIVE_SESSIONS_PER_USER
-            ):
-                return Response(
-                    {"error": constants.MAX_ACTIVE_SESSIONS_EXCEEDED},
-                    status=status.HTTP_429_TOO_MANY_REQUESTS,
-                )
+        # Get user from response data (already set by LoginSerializer)
+        user_id = response.data.get("user", {}).get("id")
+        if not user_id:
+            return response
 
-            # Create session and get tokens
-            session, tokens = AuthService.create_session(user, request)
+        # Fetch user from database
+        from apps.accounts.models import User
 
-            # Log successful login
-            AuditService.log_login(user, request)
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return response
 
-            # Update response with session info
-            response.data["session_id"] = str(session.id)
-            response.data["email_verified"] = user.email_verified
+        # Create session atomically (handles limit enforcement internally)
+        session, tokens = AuthService.create_session(user, request)
 
-            # Add warning if shopkeeper is not verified
-            if (
-                user.role == user.Role.SHOPKEEPER
-                and not user.shopkeeperprofile.is_verified
-            ):
-                response.data["warning"] = (
-                    constants.SHOPKEEPER_PENDING_VERIFICATION_WARNING
-                )
+        # Log successful login
+        AuditService.log_login(user, request)
+
+        # Update response with session info
+        response.data["session_id"] = str(session.id)
+        response.data["email_verified"] = user.email_verified
+
+        # Add warning if shopkeeper is not verified
+        if (
+            user.role == user.Role.SHOPKEEPER
+            and hasattr(user, "shopkeeperprofile")
+            and not user.shopkeeperprofile.is_verified
+        ):
+            response.data["warning"] = constants.SHOPKEEPER_PENDING_VERIFICATION_WARNING
 
         return response

@@ -28,13 +28,13 @@ class AddressViewSet(viewsets.ModelViewSet):
     Address management viewset.
 
     Endpoints:
-        GET    /api/addresses/              - List user addresses
-        POST   /api/addresses/              - Create new address
-        GET    /api/addresses/{id}/         - Get specific address
-        PUT    /api/addresses/{id}/         - Update address (full)
-        PATCH  /api/addresses/{id}/         - Update address (partial)
-        DELETE /api/addresses/{id}/         - Delete address
-        POST   /api/addresses/{id}/set-default/ - Set as default
+        GET    /api/v1/addresses/              - List user addresses
+        POST   /api/v1/addresses/              - Create new address
+        GET    /api/v1/addresses/{id}/         - Get specific address
+        PUT    /api/v1/addresses/{id}/         - Update address (full)
+        PATCH  /api/v1/addresses/{id}/         - Update address (partial)
+        DELETE /api/v1/addresses/{id}/         - Delete address
+        POST   /api/v1/addresses/{id}/set-default/ - Set as default
 
     Features:
         - Pagination (default: 5 per page)
@@ -146,7 +146,7 @@ class AddressViewSet(viewsets.ModelViewSet):
         """
         Set this address as default.
 
-        POST /api/addresses/{id}/set-default/
+        POST /api/v1/addresses/{id}/set-default/
 
         Args:
             request: HTTP request

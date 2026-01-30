@@ -41,6 +41,7 @@ Thanks,
 The E-commerce Team
 """
 
+# TODO: Implement password reset flow using these constants
 EMAIL_PASSWORD_RESET_SUBJECT = "Reset your password"
 EMAIL_PASSWORD_RESET_TEMPLATE = """
 Hi {email},
@@ -56,6 +57,7 @@ Thanks,
 The E-commerce Team
 """
 
+# TODO: Implement welcome email flow using these constants
 EMAIL_WELCOME_SUBJECT = "Welcome to E-commerce!"
 EMAIL_WELCOME_TEMPLATE = """
 Hi {email},

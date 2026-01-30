@@ -1,4 +1,5 @@
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db import transaction
 from apps.accounts.models import UserSession
 
 
@@ -13,11 +14,31 @@ class AuthService:
         }
 
     @staticmethod
+    @transaction.atomic
     def create_session(user, request):
         """
-        Create a new session for the user.
-        Returns the UserSession object.
+        Create a new session for the user with atomic limit enforcement.
+
+        Uses select_for_update to prevent TOCTOU race conditions on session limit.
+        Returns the UserSession object and tokens.
+
+        Raises:
+            ValueError: If session limit exceeded
         """
+        from apps.accounts import constants
+
+        # Lock user's sessions to prevent race condition
+        active_sessions = UserSession.objects.select_for_update().filter(
+            user=user, is_active=True
+        )
+
+        # Re-check limit inside transaction (atomic enforcement)
+        if active_sessions.count() >= constants.MAX_ACTIVE_SESSIONS_PER_USER:
+            # Auto-invalidate oldest session instead of failing
+            oldest = active_sessions.order_by("created_at").first()
+            if oldest:
+                oldest.invalidate()
+
         # Generate a unique session key (using JWT token as session key)
         tokens = AuthService.get_tokens_for_user(user)
         session_key = tokens["refresh"]  # Use refresh token as session identifier

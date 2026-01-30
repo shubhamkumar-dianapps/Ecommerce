@@ -43,10 +43,32 @@ class CartService:
 
         Raises:
             Product.DoesNotExist: If product not found
-            ValueError: If insufficient stock
+            ValueError: If insufficient stock or inventory not available
         """
         cart = CartService.get_or_create_cart(user)
-        product = Product.objects.get(id=product_id)
+
+        # Lock product and inventory to prevent race conditions
+        product = (
+            Product.objects.select_for_update()
+            .select_related("inventory")
+            .get(id=product_id)
+        )
+
+        # Validate inventory exists and has sufficient stock
+        inventory = getattr(product, "inventory", None)
+        if inventory is None:
+            raise ValueError("Product inventory not available")
+
+        # Check existing cart quantity + new quantity doesn't exceed available
+        existing_item = CartItem.objects.filter(cart=cart, product=product).first()
+        existing_quantity = existing_item.quantity if existing_item else 0
+        total_quantity = existing_quantity + quantity
+
+        if total_quantity > inventory.available:
+            raise ValueError(
+                f"Insufficient stock. Available: {inventory.available}, "
+                f"Requested: {total_quantity}"
+            )
 
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart, product=product, defaults={"quantity": quantity}
@@ -73,11 +95,37 @@ class CartService:
             Updated Cart instance
 
         Raises:
+            Cart.DoesNotExist: If cart not found
             CartItem.DoesNotExist: If cart item not found
             ValueError: If quantity exceeds available stock
         """
         cart = Cart.objects.get(user=user)
-        cart_item = CartItem.objects.get(id=item_id, cart=cart)
+        cart_item = CartItem.objects.select_related("product__inventory").get(
+            id=item_id, cart=cart
+        )
+
+        # If quantity is 0, remove the item
+        if quantity == 0:
+            cart_item.delete()
+            return cart
+
+        # Validate stock availability with lock
+        product = (
+            Product.objects.select_for_update()
+            .select_related("inventory")
+            .get(id=cart_item.product_id)
+        )
+
+        inventory = getattr(product, "inventory", None)
+        if inventory is None:
+            raise ValueError("Product inventory not available")
+
+        if quantity > inventory.available:
+            raise ValueError(
+                f"Insufficient stock. Available: {inventory.available}, "
+                f"Requested: {quantity}"
+            )
+
         cart_item.quantity = quantity
         cart_item.save()
         return cart

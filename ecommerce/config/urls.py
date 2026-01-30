@@ -4,14 +4,13 @@ from django.conf import settings
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path(
-        "api/v1/accounts/", include("apps.accounts.urls")
-    ),  # Now includes /api/v1/accounts/
+    # API v1 routes - all endpoints under /api/v1/ for consistent versioning
+    path("api/v1/accounts/", include("apps.accounts.urls")),
     path("api/v1/addresses/", include("apps.addresses.urls")),
-    path("api/", include("apps.products.urls")),
-    path("api/cart/", include("apps.cart.urls")),
-    path("api/orders/", include("apps.orders.urls")),
-    path("api/reviews/", include("apps.reviews.urls")),
+    path("api/v1/products/", include("apps.products.urls")),
+    path("api/v1/cart/", include("apps.cart.urls")),
+    path("api/v1/orders/", include("apps.orders.urls")),
+    path("api/v1/reviews/", include("apps.reviews.urls")),
 ]
 
 # Add Silk profiling URLs in DEBUG mode
