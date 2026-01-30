@@ -121,14 +121,26 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         - Public/Customers: Only published products
         - Shopkeepers (my-products action): All own products
+
+        Optimized with Prefetch to avoid N+1 queries.
         """
+        from django.db.models import Prefetch
+        from apps.products.models import ProductImage
+
+        # Prefetch only primary images to avoid N+1
+        primary_image_prefetch = Prefetch(
+            "images",
+            queryset=ProductImage.objects.filter(is_primary=True),
+            to_attr="primary_images",
+        )
+
         # For my-products action, show all shopkeeper's products
         if self.action == "my_products":
             if self.request.user.is_authenticated:
                 return (
                     Product.objects.filter(shopkeeper=self.request.user)
                     .select_related("category", "brand")
-                    .prefetch_related("images", "inventory")
+                    .prefetch_related(primary_image_prefetch, "images", "inventory")
                     .order_by("-created_at")
                 )
             return Product.objects.none()
@@ -137,7 +149,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         return (
             Product.objects.filter(status=Product.ProductStatus.PUBLISHED)
             .select_related("category", "brand")
-            .prefetch_related("images", "inventory")
+            .prefetch_related(primary_image_prefetch)
         )
 
     def get_serializer_class(self):

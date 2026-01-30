@@ -60,13 +60,12 @@ class ProductListSerializer(serializers.ModelSerializer):
         ]
 
     def get_primary_image(self, obj):
-        primary = obj.images.filter(is_primary=True).first()
-        if primary:
-            return (
-                self.context["request"].build_absolute_uri(primary.image.url)
-                if primary.image
-                else None
-            )
+        # Uses prefetched 'primary_images' from queryset - no extra DB query!
+        primary_images = getattr(obj, "primary_images", None)
+        if primary_images:
+            primary = primary_images[0] if primary_images else None
+            if primary and primary.image:
+                return self.context["request"].build_absolute_uri(primary.image.url)
         return None
 
 
