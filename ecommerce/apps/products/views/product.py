@@ -38,11 +38,21 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     - Only active categories shown
     """
 
-    queryset = Category.objects.filter(is_active=True)
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]
     lookup_field = "slug"
     pagination_class = CategoryPagination
+
+    def get_queryset(self):
+        """
+        Get categories with annotated children_count.
+        This prevents N+1 queries when serializing.
+        """
+        from django.db.models import Count
+
+        return Category.objects.filter(is_active=True).annotate(
+            children_count=Count("children")
+        )
 
 
 class BrandViewSet(viewsets.ReadOnlyModelViewSet):

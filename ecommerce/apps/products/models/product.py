@@ -205,7 +205,7 @@ class Product(TimeStampedModel):
 
     def unpublish(self) -> None:
         """Unpublish the product (set to draft)"""
-        self.status = self.ProductStatus.DRAFT
+        self.status = self.ProductStatus.DISCONTINUED
         self.save(update_fields=["status"])
 
     def mark_out_of_stock(self) -> None:
