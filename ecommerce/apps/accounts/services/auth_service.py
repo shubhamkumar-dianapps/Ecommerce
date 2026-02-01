@@ -84,13 +84,25 @@ class AuthService:
 
     @staticmethod
     def _get_client_ip(request):
-        """Extract client IP address from request"""
-        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(",")[0].strip()
-        else:
-            ip = request.META.get("REMOTE_ADDR")
-        return ip
+        """
+        Extract client IP address from request.
+
+        SECURITY: Only uses X-Forwarded-For when USE_X_FORWARDED_HOST is True
+        (indicating the app is behind a trusted proxy). Otherwise uses REMOTE_ADDR
+        to prevent IP spoofing attacks.
+        """
+        from django.conf import settings
+
+        # Only trust X-Forwarded-For if behind a trusted proxy
+        if getattr(settings, "USE_X_FORWARDED_HOST", False):
+            x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+            if x_forwarded_for:
+                # Take the first IP (client IP) from the chain
+                ip = x_forwarded_for.split(",")[0].strip()
+                return ip
+
+        # Default: use REMOTE_ADDR (direct connection IP)
+        return request.META.get("REMOTE_ADDR", "0.0.0.0")
 
     @staticmethod
     def count_active_sessions(user) -> int:

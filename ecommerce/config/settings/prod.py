@@ -3,6 +3,9 @@ from .base import *  # noqa: F403, F405
 
 DEBUG = False
 
+# SECURITY: Required SECRET_KEY - fail fast if not provided
+SECRET_KEY = env("SECRET_KEY")  # No default - must be set in production
+
 # SECURITY: Set this to your production domain
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
