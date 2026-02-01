@@ -1,7 +1,9 @@
 from django.db import models
+from django.db.models import Sum, F
 from django.conf import settings
 from apps.common.models import TimeStampedModel
 from apps.products.models import Product
+from decimal import Decimal
 
 
 class Cart(TimeStampedModel):
@@ -13,12 +15,22 @@ class Cart(TimeStampedModel):
         return f"Cart for {self.user.email}"
 
     @property
-    def total_items(self):
-        return sum(item.quantity for item in self.items.all())
+    def total_items(self) -> int:
+        """
+        Get total number of items in cart using DB aggregation.
+        Single query instead of Python iteration.
+        """
+        result = self.items.aggregate(total=Sum("quantity"))
+        return result["total"] or 0
 
     @property
-    def subtotal(self):
-        return sum(item.total_price for item in self.items.all())
+    def subtotal(self) -> Decimal:
+        """
+        Calculate cart subtotal using DB aggregation.
+        Single query with F() expression for price * quantity.
+        """
+        result = self.items.aggregate(total=Sum(F("quantity") * F("product__price")))
+        return Decimal(str(result["total"] or 0))
 
     def clear(self):
         self.items.all().delete()
