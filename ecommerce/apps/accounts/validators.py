@@ -15,8 +15,16 @@ from apps.accounts import constants
 
 def validate_phone_number(value: str) -> None:
     """
-    Validate and normalize phone numbers using the phonenumbers library.
-    Accepts international format.
+    Validate phone numbers using the phonenumbers library.
+
+    Policy: Accepts international phone numbers with India (IN) as the default
+    region for parsing numbers without country code. This allows:
+    - Indian numbers: "9876543210" or "+919876543210"
+    - International numbers: "+14155552671" (US), "+447911123456" (UK)
+
+    Note: The PHONE_REGEX in common.constants is NOT used here as it conflicts
+    with international number support. Use this validator as the single source
+    of truth for phone validation.
 
     Args:
         value: Phone number string to validate
@@ -24,22 +32,21 @@ def validate_phone_number(value: str) -> None:
     Raises:
         ValidationError: If phone number is invalid
     """
+    if not value:
+        raise ValidationError("Phone number is required")
+
     try:
-        # Try to parse the phone number
-        phone = phonenumbers.parse(value, None)
+        # Parse with India as default region for numbers without country code
+        phone = phonenumbers.parse(value, "IN")
 
         # Check if the number is valid
         if not phonenumbers.is_valid_number(phone):
-            raise ValidationError("Invalid phone number")
+            raise ValidationError(
+                "Invalid phone number. Please include country code for international numbers."
+            )
 
-        # Optionally check if it matches the regex pattern as well
-        if not re.match(common_constants.PHONE_REGEX, value):
-            raise ValidationError("Phone number format doesn't match required pattern")
-
-    except phonenumbers.NumberParseException:
-        # If parsing fails, fall back to regex validation
-        if not re.match(common_constants.PHONE_REGEX, value):
-            raise ValidationError("Invalid phone number format")
+    except phonenumbers.NumberParseException as e:
+        raise ValidationError(f"Invalid phone number format: {str(e)}")
 
 
 def validate_gst_number(value: str) -> None:
@@ -128,12 +135,23 @@ class EnhancedPasswordValidator:
     """
     Enhanced password validator for Django's AUTH_PASSWORD_VALIDATORS.
 
-    Checks for:
-    - Minimum length
-    - At least one uppercase letter
-    - At least one lowercase letter
-    - At least one digit
-    - At least one special character
+    Configurable requirements:
+    - Minimum length (default: from common.constants.PASSWORD_MIN_LENGTH)
+    - At least one uppercase letter (configurable)
+    - At least one lowercase letter (configurable)
+    - At least one digit (configurable)
+    - At least one special character (configurable)
+
+    Usage in settings.py:
+        AUTH_PASSWORD_VALIDATORS = [
+            {
+                'NAME': 'apps.accounts.validators.EnhancedPasswordValidator',
+                'OPTIONS': {
+                    'min_length': 10,
+                    'require_special': False,
+                }
+            },
+        ]
     """
 
     def __init__(
@@ -151,8 +169,39 @@ class EnhancedPasswordValidator:
         self.require_special = require_special
 
     def validate(self, password: str, user: Any = None) -> None:
-        """Validate password against requirements"""
-        validate_password_strength(password)
+        """
+        Validate password against configured requirements.
+
+        Uses instance configuration instead of delegating to validate_password_strength.
+        """
+        errors = []
+
+        # Check minimum length
+        if len(password) < self.min_length:
+            errors.append(
+                f"Password must be at least {self.min_length} characters long"
+            )
+
+        # Check for uppercase (if required)
+        if self.require_uppercase and not re.search(r"[A-Z]", password):
+            errors.append("Password must contain at least one uppercase letter")
+
+        # Check for lowercase (if required)
+        if self.require_lowercase and not re.search(r"[a-z]", password):
+            errors.append("Password must contain at least one lowercase letter")
+
+        # Check for digit (if required)
+        if self.require_digit and not re.search(r"\d", password):
+            errors.append("Password must contain at least one digit")
+
+        # Check for special character (if required)
+        if self.require_special and not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            errors.append(
+                'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)'
+            )
+
+        if errors:
+            raise ValidationError(errors)
 
     def get_help_text(self) -> str:
         """Get help text for password requirements"""
@@ -168,17 +217,3 @@ class EnhancedPasswordValidator:
             requirements.append("one special character")
 
         return f"Your password must contain {', '.join(requirements)}."
-
-
-# Keep the old validator for backward compatibility during transition
-class CustomPasswordValidator:
-    """DEPRECATED: Use EnhancedPasswordValidator instead"""
-
-    def validate(self, password: str, user: Any = None) -> None:
-        if len(password) < common_constants.PASSWORD_MIN_LENGTH:
-            raise ValidationError(
-                f"Password must be at least {common_constants.PASSWORD_MIN_LENGTH} characters"
-            )
-
-    def get_help_text(self) -> str:
-        return f"Your password must contain at least {common_constants.PASSWORD_MIN_LENGTH} characters."

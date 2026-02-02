@@ -125,32 +125,46 @@ class Address(TimeStampedModel):
         default addresses for this user.
 
         Also validates postal code with country.
+
+        Uses transaction + select_for_update to prevent race conditions
+        where two addresses could briefly both be marked as default.
         """
+        from django.db import transaction
+
         # Validate postal code for the country
         if self.postal_code and self.country:
             validate_postal_code(self.postal_code, self.country)
 
-        # Ensure only one default address per user
+        # Ensure only one default address per user (atomic operation)
         if self.is_default:
-            Address.objects.filter(user=self.user, is_default=True).exclude(
-                pk=self.pk
-            ).update(is_default=False)
-
-        super().save(*args, **kwargs)
+            with transaction.atomic():
+                # Lock all user's addresses to prevent race condition
+                Address.objects.select_for_update().filter(
+                    user=self.user, is_default=True
+                ).exclude(pk=self.pk).update(is_default=False)
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
     def set_as_default(self) -> None:
         """
         Set this address as the default address.
 
         Automatically unsets any other default addresses for the user.
-        """
-        if not self.is_default:
-            Address.objects.filter(user=self.user, is_default=True).update(
-                is_default=False
-            )
 
-            self.is_default = True
-            self.save(update_fields=["is_default", "updated_at"])
+        Uses transaction + select_for_update to prevent race conditions.
+        """
+        from django.db import transaction
+
+        if not self.is_default:
+            with transaction.atomic():
+                # Lock all user's addresses to prevent race condition
+                Address.objects.select_for_update().filter(
+                    user=self.user, is_default=True
+                ).update(is_default=False)
+
+                self.is_default = True
+                self.save(update_fields=["is_default", "updated_at"])
 
     @property
     def full_address(self) -> str:

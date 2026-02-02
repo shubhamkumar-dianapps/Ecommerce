@@ -1,5 +1,12 @@
-from .base import *  # noqa: F403, F405
+"""
+Production Settings
 
+Security-hardened settings for production deployment.
+All secrets must be provided via environment variables.
+"""
+
+from .base import *  # noqa: F403
+from .base import env  # Explicit import to satisfy linters
 
 DEBUG = False
 
