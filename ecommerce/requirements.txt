@@ -1,8 +1,33 @@
-django>=5.0
-djangorestframework
-djangorestframework-simplejwt
-django-filter
-django-environ
-pillow
-drf-spectacular # For API documentation
-django-cors-headers
+# Django and Core
+Django==6.0
+djangorestframework==3.16.1
+djangorestframework_simplejwt==5.5.1
+
+# Django Extensions
+django-cors-headers==4.9.0
+django-environ==0.12.0
+django-filter==24.3
+django-jazzmin==3.0.1
+django-phonenumber-field==8.4.0
+django-taggit==6.1.0
+
+# Phone number support
+phonenumbers==9.0.22
+
+# API Documentation
+drf-spectacular==0.28.0
+
+# Image handling
+pillow==12.0.0
+
+# HTTP client
+requests==2.32.5
+
+# JWT
+PyJWT==2.10.1
+
+# Code formatting
+black==25.12.0
+
+# YAML support
+PyYAML==6.0.3

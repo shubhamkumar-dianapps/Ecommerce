@@ -47,9 +47,14 @@ urlpatterns = [
     path("api/v1/reviews/", include("apps.reviews.urls")),
 ]
 
-# Add Silk profiling URLs in DEBUG mode
+# Add Silk profiling URLs in DEBUG mode (optional dependency)
 if settings.DEBUG:
-    urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
+    try:
+        import silk  # noqa: F401
+
+        urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
+    except ImportError:
+        pass  # Silk not installed, skip profiling URLs
 
 # Custom error handlers for graceful JSON responses
 handler400 = "config.exception_handlers.handler400"
