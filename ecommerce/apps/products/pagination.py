@@ -1,25 +1,30 @@
 """
 Products Pagination
 
-Pagination classes for products app using constants.
+Pagination classes for products app using CursorPagination for performance.
 """
 
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import CursorPagination, PageNumberPagination
 from apps.products import constants
 
 
-class ProductPagination(PageNumberPagination):
+class ProductPagination(CursorPagination):
     """
-    Pagination for product listings.
+    Cursor-based pagination for product listings.
+
+    Benefits:
+    - Better performance on large datasets (no OFFSET)
+    - Consistent results during infinite scroll
+    - No duplicate/skipped items when data changes
 
     Default: 12 items per page (good for grid layouts)
-    Max: 50 items per page
     """
 
     page_size = constants.PRODUCT_PAGE_SIZE
     page_size_query_param = "page_size"
     max_page_size = constants.PRODUCT_MAX_PAGE_SIZE
-    page_query_param = "page"
+    ordering = "-created_at"  # Required for cursor pagination
+    cursor_query_param = "cursor"
 
 
 class CategoryPagination(PageNumberPagination):
