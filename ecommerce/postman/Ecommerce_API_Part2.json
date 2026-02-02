@@ -1,0 +1,536 @@
+{
+  "info": {
+    "name": "Ecommerce API - Products & Cart",
+    "description": "Products, Categories, Brands, and Cart endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8000/api/v1"},
+    {"key": "accessToken", "value": ""},
+    {"key": "productSlug", "value": ""},
+    {"key": "categorySlug", "value": ""},
+    {"key": "brandSlug", "value": ""},
+    {"key": "productId", "value": ""},
+    {"key": "cartItemId", "value": ""}
+  ],
+  "item": [
+    {
+      "name": "📦 Categories",
+      "item": [
+        {
+          "name": "List Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.results && json.results.length > 0) {",
+                  "        pm.collectionVariables.set('categorySlug', json.results[0].slug);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/categories/",
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "Get Category by Slug",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/categories/{{categorySlug}}/",
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "Get Category - Invalid Slug",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/categories/nonexistent-category/",
+            "auth": {"type": "noauth"},
+            "description": "EDGE CASE: Should return 404"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏷️ Brands",
+      "item": [
+        {
+          "name": "List Brands",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.results && json.results.length > 0) {",
+                  "        pm.collectionVariables.set('brandSlug', json.results[0].slug);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/brands/",
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "Get Brand by Slug",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/brands/{{brandSlug}}/",
+            "auth": {"type": "noauth"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "🛍️ Products",
+      "item": [
+        {
+          "name": "List Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.results && json.results.length > 0) {",
+                  "        pm.collectionVariables.set('productSlug', json.results[0].slug);",
+                  "        pm.collectionVariables.set('productId', json.results[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/products/",
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "List Products - With Pagination",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/products/?page=1&page_size=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "products", ""],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "page_size", "value": "5"}
+              ]
+            },
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "List Products - Filter by Category",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/products/?category=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "products", ""],
+              "query": [{"key": "category", "value": "1"}]
+            },
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "List Products - Filter by Brand",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/products/?brand=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "products", ""],
+              "query": [{"key": "brand", "value": "1"}]
+            },
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "List Products - Featured Only",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/products/?is_featured=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "products", ""],
+              "query": [{"key": "is_featured", "value": "true"}]
+            },
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "List Products - Search",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/products/?search=phone",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "products", ""],
+              "query": [{"key": "search", "value": "phone"}]
+            },
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "List Products - Order by Price (Low to High)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/products/?ordering=price",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "products", ""],
+              "query": [{"key": "ordering", "value": "price"}]
+            },
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "List Products - Order by Price (High to Low)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/products/?ordering=-price",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "products", ""],
+              "query": [{"key": "ordering", "value": "-price"}]
+            },
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "Get Product by Slug",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/products/{{productSlug}}/",
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "Get Product - Invalid Slug",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/products/nonexistent-product-slug/",
+            "auth": {"type": "noauth"},
+            "description": "EDGE CASE: Should return 404"
+          }
+        },
+        {
+          "name": "My Products (Shopkeeper)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/products/my-products/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "description": "Requires shopkeeper authentication"
+          }
+        },
+        {
+          "name": "My Products - Filter by Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/products/my-products/?status=DRAFT",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "products", "my-products", ""],
+              "query": [{"key": "status", "value": "DRAFT"}]
+            },
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Create Product (Shopkeeper)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/products/products/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Product\",\n  \"description\": \"A test product description\",\n  \"price\": \"99.99\",\n  \"category\": 1,\n  \"sku\": \"SKU-TEST-001\",\n  \"status\": \"DRAFT\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Product - Customer (Should Fail)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/products/products/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Unauthorized Product\",\n  \"price\": \"50.00\"\n}"
+            },
+            "description": "EDGE CASE: Customer should get 403 Forbidden"
+          }
+        },
+        {
+          "name": "Update Product (Shopkeeper)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/products/products/{{productSlug}}/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": \"149.99\",\n  \"is_featured\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Product (Shopkeeper)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/products/products/{{productSlug}}/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "🛒 Cart",
+      "item": [
+        {
+          "name": "Get Cart",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cart/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Get Cart - Unauthenticated",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cart/",
+            "auth": {"type": "noauth"},
+            "description": "EDGE CASE: Should return 401 Unauthorized"
+          }
+        },
+        {
+          "name": "Get Cart - Shopkeeper (Should Fail)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cart/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "description": "EDGE CASE: Shopkeepers should get 403 Forbidden (use shopkeeper token)"
+          }
+        },
+        {
+          "name": "Add Item to Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.items && json.items.length > 0) {",
+                  "        pm.collectionVariables.set('cartItemId', json.items[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/add_item/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": {{productId}},\n  \"quantity\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "Add Item - Default Quantity (1)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/add_item/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": {{productId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "Add Item - Nonexistent Product",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/add_item/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": 99999,\n  \"quantity\": 1\n}"
+            },
+            "description": "EDGE CASE: Should return 404 - product not found"
+          }
+        },
+        {
+          "name": "Add Item - Exceeding Stock",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/add_item/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": {{productId}},\n  \"quantity\": 9999\n}"
+            },
+            "description": "EDGE CASE: Should return 400 - insufficient stock"
+          }
+        },
+        {
+          "name": "Add Item - Zero Quantity",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/add_item/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": {{productId}},\n  \"quantity\": 0\n}"
+            },
+            "description": "EDGE CASE: Should return 400 - quantity must be positive"
+          }
+        },
+        {
+          "name": "Add Item - Negative Quantity",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/add_item/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": {{productId}},\n  \"quantity\": -5\n}"
+            },
+            "description": "EDGE CASE: Should return 400 - quantity must be positive"
+          }
+        },
+        {
+          "name": "Add Item - Missing product_id",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/add_item/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 2\n}"
+            },
+            "description": "EDGE CASE: Should return 400 - product_id required"
+          }
+        },
+        {
+          "name": "Update Cart Item",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/update_item/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_id\": {{cartItemId}},\n  \"quantity\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Cart Item - Nonexistent Item",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/update_item/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_id\": 99999,\n  \"quantity\": 3\n}"
+            },
+            "description": "EDGE CASE: Should return 404 - cart item not found"
+          }
+        },
+        {
+          "name": "Update Cart Item - Exceeding Stock",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/update_item/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_id\": {{cartItemId}},\n  \"quantity\": 9999\n}"
+            },
+            "description": "EDGE CASE: Should return 400 - insufficient stock"
+          }
+        },
+        {
+          "name": "Remove Cart Item",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/remove_item/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_id\": {{cartItemId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "Remove Cart Item - Nonexistent",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/remove_item/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_id\": 99999\n}"
+            },
+            "description": "EDGE CASE: Should return 404"
+          }
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/clear/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Clear Empty Cart",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/clear/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "description": "EDGE CASE: Clearing already empty cart should succeed"
+          }
+        }
+      ]
+    }
+  ]
+}

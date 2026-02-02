@@ -1,0 +1,483 @@
+{
+  "info": {
+    "name": "Ecommerce API Collection",
+    "description": "Comprehensive API collection for Ecommerce backend with all endpoints and edge cases",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8000/api/v1"},
+    {"key": "accessToken", "value": ""},
+    {"key": "refreshToken", "value": ""},
+    {"key": "customerId", "value": ""},
+    {"key": "shopkeeperId", "value": ""},
+    {"key": "productId", "value": ""},
+    {"key": "productSlug", "value": ""},
+    {"key": "categorySlug", "value": ""},
+    {"key": "brandSlug", "value": ""},
+    {"key": "addressId", "value": ""},
+    {"key": "cartItemId", "value": ""},
+    {"key": "orderId", "value": ""},
+    {"key": "reviewId", "value": ""}
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{"key": "token", "value": "{{accessToken}}"}]
+  },
+  "item": [
+    {
+      "name": "🏥 Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8000/api/health/",
+            "description": "Check API and database health status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Register Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', json.tokens.access);",
+                  "    pm.collectionVariables.set('refreshToken', json.tokens.refresh);",
+                  "    pm.collectionVariables.set('customerId', json.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/register/customer/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"phone\": \"+919876543210\",\n  \"password\": \"SecurePass123!\",\n  \"password_confirm\": \"SecurePass123!\",\n  \"full_name\": \"Test Customer\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register Customer - Weak Password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/register/customer/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"weak@example.com\",\n  \"phone\": \"+919876543211\",\n  \"password\": \"123\",\n  \"password_confirm\": \"123\",\n  \"full_name\": \"Weak Password\"\n}"
+            },
+            "description": "EDGE CASE: Should fail with password validation error"
+          }
+        },
+        {
+          "name": "Register Customer - Password Mismatch",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/register/customer/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mismatch@example.com\",\n  \"phone\": \"+919876543212\",\n  \"password\": \"SecurePass123!\",\n  \"password_confirm\": \"DifferentPass456!\",\n  \"full_name\": \"Mismatch Test\"\n}"
+            },
+            "description": "EDGE CASE: Should fail - passwords don't match"
+          }
+        },
+        {
+          "name": "Register Customer - Duplicate Email",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/register/customer/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"phone\": \"+919876543213\",\n  \"password\": \"SecurePass123!\",\n  \"password_confirm\": \"SecurePass123!\",\n  \"full_name\": \"Duplicate Email\"\n}"
+            },
+            "description": "EDGE CASE: Should fail - email already exists"
+          }
+        },
+        {
+          "name": "Register Customer - Invalid Phone",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/register/customer/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalidphone@example.com\",\n  \"phone\": \"12345\",\n  \"password\": \"SecurePass123!\",\n  \"password_confirm\": \"SecurePass123!\",\n  \"full_name\": \"Invalid Phone\"\n}"
+            },
+            "description": "EDGE CASE: Should fail - invalid phone format"
+          }
+        },
+        {
+          "name": "Register Shopkeeper",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('shopkeeperId', json.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/register/shopkeeper/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"shopkeeper@example.com\",\n  \"phone\": \"+919876543214\",\n  \"password\": \"SecurePass123!\",\n  \"password_confirm\": \"SecurePass123!\",\n  \"shop_name\": \"Test Shop\",\n  \"gst_number\": \"GST123456789012\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - Valid Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', json.access);",
+                  "    pm.collectionVariables.set('refreshToken', json.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/login/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - Invalid Password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/login/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"WrongPassword!\"\n}"
+            },
+            "description": "EDGE CASE: Should return 401 Unauthorized"
+          }
+        },
+        {
+          "name": "Login - Nonexistent User",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/login/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nonexistent@example.com\",\n  \"password\": \"AnyPassword123!\"\n}"
+            },
+            "description": "EDGE CASE: Should return 401 - user not found"
+          }
+        },
+        {
+          "name": "Token Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', json.access);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/token/refresh/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Token Refresh - Invalid Token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/token/refresh/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"invalid.token.here\"\n}"
+            },
+            "description": "EDGE CASE: Should return 401 - invalid token"
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/accounts/profile/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Get Profile - No Auth",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/accounts/profile/",
+            "auth": {"type": "noauth"},
+            "description": "EDGE CASE: Should return 401 Unauthorized"
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/accounts/profile/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Updated Customer Name\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/verify-email/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"verification-token-here\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Resend Verification Email",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/resend-verification/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Get Active Sessions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/accounts/sessions/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Revoke Session",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/sessions/revoke/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"session_id\": \"session-uuid-here\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Revoke All Sessions",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/sessions/revoke-all/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "📍 Addresses",
+      "item": [
+        {
+          "name": "List Addresses",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/addresses/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "List Addresses - With Filters",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/addresses/?address_type=HOME&is_default=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["addresses", ""],
+              "query": [
+                {"key": "address_type", "value": "HOME"},
+                {"key": "is_default", "value": "true"}
+              ]
+            },
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Create Address - Home",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('addressId', json.address.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/addresses/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address_type\": \"HOME\",\n  \"address_line_1\": \"123 Main Street\",\n  \"address_line_2\": \"Apt 4B\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"postal_code\": \"400001\",\n  \"country\": \"India\",\n  \"is_default\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Address - Office",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/addresses/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address_type\": \"OFFICE\",\n  \"address_line_1\": \"456 Business Park\",\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"postal_code\": \"560001\",\n  \"country\": \"India\",\n  \"is_default\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Address - Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/addresses/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Mumbai\"\n}"
+            },
+            "description": "EDGE CASE: Should fail - missing required fields"
+          }
+        },
+        {
+          "name": "Create Address - Invalid Postal Code",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/addresses/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address_type\": \"HOME\",\n  \"address_line_1\": \"Invalid Postal\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"postal_code\": \"ABC123\",\n  \"country\": \"India\"\n}"
+            },
+            "description": "EDGE CASE: Should fail - invalid postal code format"
+          }
+        },
+        {
+          "name": "Get Address by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/addresses/{{addressId}}/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Get Address - Nonexistent ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/addresses/99999/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "description": "EDGE CASE: Should return 404"
+          }
+        },
+        {
+          "name": "Update Address (PUT)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/addresses/{{addressId}}/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address_type\": \"HOME\",\n  \"address_line_1\": \"789 Updated Street\",\n  \"city\": \"Delhi\",\n  \"state\": \"Delhi\",\n  \"postal_code\": \"110001\",\n  \"country\": \"India\",\n  \"is_default\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Address (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/addresses/{{addressId}}/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Chennai\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Set Default Address",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/addresses/{{addressId}}/set-default/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Delete Address",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/addresses/{{addressId}}/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Delete Default Address",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/addresses/{{addressId}}/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "description": "EDGE CASE: Should fail - cannot delete default address"
+          }
+        }
+      ]
+    }
+  ]
+}

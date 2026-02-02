@@ -141,7 +141,7 @@ class AddressViewSet(viewsets.ModelViewSet):
             status=status.HTTP_204_NO_CONTENT,
         )
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], url_path="set-default")
     def set_default(self, request: Request, pk: Any = None) -> Response:
         """
         Set this address as default.

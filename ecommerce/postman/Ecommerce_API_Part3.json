@@ -1,0 +1,574 @@
+{
+  "info": {
+    "name": "Ecommerce API - Orders & Reviews",
+    "description": "Orders, Checkout, Returns, and Reviews endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8000/api/v1"},
+    {"key": "accessToken", "value": ""},
+    {"key": "orderId", "value": ""},
+    {"key": "addressId", "value": ""},
+    {"key": "productId", "value": ""},
+    {"key": "reviewId", "value": ""}
+  ],
+  "item": [
+    {
+      "name": "📦 Orders",
+      "item": [
+        {
+          "name": "List Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.results && json.results.length > 0) {",
+                  "        pm.collectionVariables.set('orderId', json.results[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "List Orders - Unauthenticated",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/",
+            "auth": {"type": "noauth"},
+            "description": "EDGE CASE: Should return 401 Unauthorized"
+          }
+        },
+        {
+          "name": "Get Order Details",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/{{orderId}}/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Get Order - Nonexistent ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/99999/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "description": "EDGE CASE: Should return 404"
+          }
+        },
+        {
+          "name": "Checkout - Create Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('orderId', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/checkout/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shipping_address_id\": {{addressId}},\n  \"customer_notes\": \"Please handle with care\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Checkout - With Billing Address",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/checkout/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shipping_address_id\": {{addressId}},\n  \"billing_address_id\": {{addressId}},\n  \"customer_notes\": \"Gift wrap please\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Checkout - Empty Cart",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/checkout/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shipping_address_id\": {{addressId}}\n}"
+            },
+            "description": "EDGE CASE: Should return 400 - cart is empty"
+          }
+        },
+        {
+          "name": "Checkout - Invalid Address",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/checkout/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shipping_address_id\": 99999\n}"
+            },
+            "description": "EDGE CASE: Should return 400 - address not found"
+          }
+        },
+        {
+          "name": "Checkout - Missing Address",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/checkout/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "description": "EDGE CASE: Should return 400 - shipping_address_id required"
+          }
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/{{orderId}}/cancel/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Cancel Already Cancelled Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/{{orderId}}/cancel/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "description": "EDGE CASE: Should return 400 - order already cancelled"
+          }
+        },
+        {
+          "name": "Cancel Delivered Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/{{orderId}}/cancel/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "description": "EDGE CASE: Should return 400 - cannot cancel delivered order"
+          }
+        },
+        {
+          "name": "Request Return",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/{{orderId}}/return/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"DEFECTIVE\",\n  \"description\": \"Item arrived with scratches\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Request Return - Wrong Size",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/{{orderId}}/return/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"WRONG_SIZE\",\n  \"description\": \"Size is too small\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Request Return - Not Delivered Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/{{orderId}}/return/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"DEFECTIVE\",\n  \"description\": \"Test\"\n}"
+            },
+            "description": "EDGE CASE: Should return 400 - only delivered orders can be returned"
+          }
+        },
+        {
+          "name": "Request Return - Missing Reason",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/{{orderId}}/return/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"No reason provided\"\n}"
+            },
+            "description": "EDGE CASE: Should return 400 - reason is required"
+          }
+        },
+        {
+          "name": "Get Return Status",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/{{orderId}}/return-status/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Get Return Status - No Return Request",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/{{orderId}}/return-status/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "description": "EDGE CASE: Should return 404 if no return request exists"
+          }
+        }
+      ]
+    },
+    {
+      "name": "⭐ Reviews",
+      "item": [
+        {
+          "name": "List Reviews for Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.results && json.results.length > 0) {",
+                  "        pm.collectionVariables.set('reviewId', json.results[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reviews/",
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "List Reviews - Filter by Rating",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reviews/?rating=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", ""],
+              "query": [{"key": "rating", "value": "5"}]
+            },
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "List Reviews - Search",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reviews/?search=excellent",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", ""],
+              "query": [{"key": "search", "value": "excellent"}]
+            },
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "List Reviews - Order by Rating",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reviews/?ordering=-rating",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", ""],
+              "query": [{"key": "ordering", "value": "-rating"}]
+            },
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "List Reviews - Order by Most Helpful",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reviews/?ordering=-helpful_count",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", ""],
+              "query": [{"key": "ordering", "value": "-helpful_count"}]
+            },
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "Get Review Details",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reviews/{{reviewId}}/",
+            "auth": {"type": "noauth"}
+          }
+        },
+        {
+          "name": "My Reviews",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reviews/my-reviews/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Create Review",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('reviewId', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reviews/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product\": {{productId}},\n  \"rating\": 5,\n  \"title\": \"Excellent Product!\",\n  \"comment\": \"This product exceeded my expectations. Highly recommended!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Review - Minimum Fields",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reviews/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product\": {{productId}},\n  \"rating\": 4\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Review - Invalid Rating (Too High)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reviews/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product\": {{productId}},\n  \"rating\": 10,\n  \"comment\": \"Testing invalid rating\"\n}"
+            },
+            "description": "EDGE CASE: Should return 400 - rating must be 1-5"
+          }
+        },
+        {
+          "name": "Create Review - Invalid Rating (Zero)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reviews/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product\": {{productId}},\n  \"rating\": 0\n}"
+            },
+            "description": "EDGE CASE: Should return 400 - rating must be at least 1"
+          }
+        },
+        {
+          "name": "Create Review - Unauthenticated",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reviews/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "noauth"},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product\": {{productId}},\n  \"rating\": 5\n}"
+            },
+            "description": "EDGE CASE: Should return 401 Unauthorized"
+          }
+        },
+        {
+          "name": "Update Review",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/reviews/{{reviewId}}/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"comment\": \"Updated my review after more usage\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Review - Not Owner",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/reviews/{{reviewId}}/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 1,\n  \"comment\": \"Trying to update someone else's review\"\n}"
+            },
+            "description": "EDGE CASE: Should return 403 Forbidden (use different user token)"
+          }
+        },
+        {
+          "name": "Delete Review",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/reviews/{{reviewId}}/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Like Review (Toggle)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reviews/{{reviewId}}/like/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]}
+          }
+        },
+        {
+          "name": "Like Review - Unauthenticated",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reviews/{{reviewId}}/like/",
+            "auth": {"type": "noauth"},
+            "description": "EDGE CASE: Should return 401 Unauthorized"
+          }
+        },
+        {
+          "name": "Reply to Review",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reviews/{{reviewId}}/reply/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Thank you for your feedback! We appreciate it.\"\n}"
+            },
+            "description": "Requires product owner or verified shopkeeper authentication"
+          }
+        },
+        {
+          "name": "Reply to Review - Empty Comment",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reviews/{{reviewId}}/reply/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"\"\n}"
+            },
+            "description": "EDGE CASE: Should return 400 - comment required"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚫 Rate Limiting Tests",
+      "item": [
+        {
+          "name": "Test Anonymous Rate Limit",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/products/",
+            "auth": {"type": "noauth"},
+            "description": "Run this multiple times (10+) to trigger rate limit. Should eventually return 429 Too Many Requests"
+          }
+        },
+        {
+          "name": "Test Auth Rate Limit",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/accounts/login/",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"WrongPassword\"\n}"
+            },
+            "description": "Run this multiple times (5+) to trigger auth rate limit. Should eventually return 429"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔒 Authorization Edge Cases",
+      "item": [
+        {
+          "name": "Access Other User's Order",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/{{orderId}}/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "description": "EDGE CASE: Use different user's token to access order. Should return 404"
+          }
+        },
+        {
+          "name": "Access Other User's Address",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/addresses/{{addressId}}/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}"}]},
+            "description": "EDGE CASE: Use different user's token. Should return 404"
+          }
+        },
+        {
+          "name": "Expired Token Access",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/accounts/profile/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "expired.token.here"}]},
+            "description": "EDGE CASE: Should return 401 with token_not_valid error"
+          }
+        },
+        {
+          "name": "Malformed Token",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/accounts/profile/",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "not-a-valid-jwt"}]},
+            "description": "EDGE CASE: Should return 401 with token_not_valid error"
+          }
+        }
+      ]
+    }
+  ]
+}

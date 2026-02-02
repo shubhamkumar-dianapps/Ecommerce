@@ -17,6 +17,7 @@ from apps.products.serializers.product import (
     ProductDetailSerializer,
 )
 from apps.products.permissions import IsShopkeeperOrReadOnly, IsProductOwner
+from apps.products.filters import ProductFilter
 from apps.products.pagination import (
     ProductPagination,
     CategoryPagination,
@@ -110,7 +111,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         filters.SearchFilter,
         filters.OrderingFilter,
     ]
-    filterset_fields = ["category", "brand", "is_featured"]
+    filterset_class = ProductFilter  # Use custom filter with slug support
     search_fields = ["name", "description", "sku"]
     ordering_fields = ["price", "created_at", "name"]
     ordering = ["-created_at"]

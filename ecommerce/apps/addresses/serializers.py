@@ -59,6 +59,21 @@ class AddressSerializer(serializers.ModelSerializer):
                 {"address_line_1": "Street address is required"}
             )
 
+        # Validate postal code format based on country
+        postal_code = attrs.get("postal_code")
+        country = attrs.get("country", "India")
+
+        if postal_code:
+            from apps.addresses.validators import validate_postal_code
+            from django.core.exceptions import ValidationError as DjangoValidationError
+
+            try:
+                validate_postal_code(postal_code, country)
+            except DjangoValidationError as e:
+                raise serializers.ValidationError(
+                    {"postal_code": e.messages[0] if e.messages else str(e)}
+                )
+
         return attrs
 
     def create(self, validated_data: Dict[str, Any]) -> Address:
