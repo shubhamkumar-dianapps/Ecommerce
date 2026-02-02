@@ -8,14 +8,14 @@ from typing import Optional
 from decimal import Decimal
 from django.db import models
 from django.conf import settings
-from apps.common.models import TimeStampedModel
+from apps.common.models import TimeStampedModel, SoftDeleteModel
 from apps.products.models.category import Category
 from apps.products.models.brand import Brand
 from apps.products import constants
 from apps.products.validators import validate_price, validate_sku
 
 
-class Product(TimeStampedModel):
+class Product(SoftDeleteModel, TimeStampedModel):
     """
     Product model for e-commerce platform.
 
