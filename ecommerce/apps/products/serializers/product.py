@@ -80,3 +80,65 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = "__all__"
+
+
+class ProductCreateUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating and updating products.
+
+    Accepts category and brand as IDs (PrimaryKeyRelatedField).
+    """
+
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        help_text="Category ID",
+    )
+    brand = serializers.PrimaryKeyRelatedField(
+        queryset=Brand.objects.all(),
+        required=False,
+        allow_null=True,
+        help_text="Brand ID (optional)",
+    )
+
+    class Meta:
+        model = Product
+        fields = [
+            "name",
+            "slug",
+            "description",
+            "short_description",
+            "category",
+            "brand",
+            "price",
+            "compare_at_price",
+            "cost_price",
+            "sku",
+            "status",
+            "is_featured",
+            "meta_title",
+            "meta_description",
+        ]
+
+    def validate_slug(self, value):
+        """Ensure slug is unique (excluding current instance on update)."""
+        instance = self.instance
+        if (
+            Product.objects.filter(slug=value)
+            .exclude(pk=instance.pk if instance else None)
+            .exists()
+        ):
+            raise serializers.ValidationError(
+                "A product with this slug already exists."
+            )
+        return value
+
+    def validate_sku(self, value):
+        """Ensure SKU is unique (excluding current instance on update)."""
+        instance = self.instance
+        if (
+            Product.objects.filter(sku=value)
+            .exclude(pk=instance.pk if instance else None)
+            .exists()
+        ):
+            raise serializers.ValidationError("A product with this SKU already exists.")
+        return value

@@ -4,7 +4,7 @@ Product Views
 Production-ready views with proper permissions, pagination, and filtering.
 """
 
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -155,6 +155,10 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         """Return appropriate serializer based on action"""
+        if self.action in ["create", "update", "partial_update"]:
+            from apps.products.serializers import ProductCreateUpdateSerializer
+
+            return ProductCreateUpdateSerializer
         if self.action == "retrieve" or self.action == "my_products":
             return ProductDetailSerializer
         return ProductListSerializer
@@ -162,6 +166,16 @@ class ProductViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Set shopkeeper as product owner when creating"""
         serializer.save(shopkeeper=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        """Delete product with confirmation message."""
+        instance = self.get_object()
+        product_name = instance.name
+        self.perform_destroy(instance)
+        return Response(
+            {"detail": f"Product '{product_name}' has been deleted successfully."},
+            status=status.HTTP_200_OK,
+        )
 
     @action(
         detail=False,
