@@ -22,11 +22,22 @@ class CheckoutService:
         if not cart.items.exists():
             raise ValueError("Cart is empty")
 
-        # Get addresses
-        shipping_address = Address.objects.get(id=shipping_address_id, user=user)
+        # Get addresses with proper error handling
+        try:
+            shipping_address = Address.objects.get(id=shipping_address_id, user=user)
+        except Address.DoesNotExist:
+            raise ValueError(
+                "Shipping address not found. Please provide a valid address ID."
+            )
+
         billing_address = shipping_address
         if billing_address_id:
-            billing_address = Address.objects.get(id=billing_address_id, user=user)
+            try:
+                billing_address = Address.objects.get(id=billing_address_id, user=user)
+            except Address.DoesNotExist:
+                raise ValueError(
+                    "Billing address not found. Please provide a valid address ID."
+                )
 
         # Calculate totals
         subtotal = cart.subtotal

@@ -84,24 +84,18 @@ class ReviewViewSet(viewsets.ModelViewSet):
         - Detail: All reviews (for owner access)
         """
         if self.action == "my_reviews":
-            # User's own reviews (all statuses)
+            # User's own reviews (all statuses) - optimized
             if self.request.user.is_authenticated:
                 return ReviewService.get_user_reviews(self.request.user)
             return Review.objects.none()
 
-        # For public listing, show only active reviews
-        queryset = (
-            Review.objects.filter(is_active=True)
-            .select_related("product", "user")
-            .prefetch_related("likes", "replies")
-        )
-
-        # Filter by product if product_id in URL
+        # For public listing, use optimized service method
         product_id = self.kwargs.get("product_id")
         if product_id:
-            queryset = queryset.filter(product_id=product_id, is_active=True)
+            return ReviewService.get_product_reviews(product_id, only_active=True)
 
-        return queryset
+        # General listing (non-product specific) - return all active reviews
+        return ReviewService.get_all_reviews(only_active=True)
 
     def get_serializer_class(self):
         """Return appropriate serializer based on action"""

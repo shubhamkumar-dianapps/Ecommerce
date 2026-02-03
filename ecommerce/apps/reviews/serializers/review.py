@@ -150,14 +150,22 @@ class ReviewListSerializer(serializers.ModelSerializer):
         return obj.user.email
 
     def get_user_has_liked(self, obj: Review) -> bool:
-        """Check if current user has liked this review"""
+        """Check if current user has liked this review using prefetched data"""
         request = self.context.get("request")
         if request and request.user.is_authenticated:
+            # Use prefetched likes if available
+            if (
+                hasattr(obj, "_prefetched_objects_cache")
+                and "likes" in obj._prefetched_objects_cache
+            ):
+                return any(like.user_id == request.user.id for like in obj.likes.all())
             return obj.likes.filter(user=request.user).exists()
         return False
 
     def get_reply_count(self, obj: Review) -> int:
-        """Get number of active replies"""
+        """Get number of active replies from prefetched data"""
+        if hasattr(obj, "active_replies"):
+            return len(obj.active_replies)
         return obj.replies.filter(is_active=True).count()
 
 
@@ -217,14 +225,25 @@ class ReviewDetailSerializer(serializers.ModelSerializer):
         return obj.user.email
 
     def get_user_has_liked(self, obj: Review) -> bool:
-        """Check if current user has liked this review"""
+        """Check if current user has liked this review using prefetched data"""
         request = self.context.get("request")
         if request and request.user.is_authenticated:
+            # Use prefetched likes if available
+            if (
+                hasattr(obj, "_prefetched_objects_cache")
+                and "likes" in obj._prefetched_objects_cache
+            ):
+                return any(like.user_id == request.user.id for like in obj.likes.all())
             return obj.likes.filter(user=request.user).exists()
         return False
 
     def get_replies(self, obj: Review):
-        """Get only active replies"""
+        """Get only active replies from prefetched data"""
+        if hasattr(obj, "active_replies"):
+            return ReviewReplySerializer(
+                obj.active_replies, many=True, context=self.context
+            ).data
+        # Fallback if not prefetched
         active_replies = obj.replies.filter(is_active=True)
         return ReviewReplySerializer(
             active_replies, many=True, context=self.context

@@ -51,19 +51,43 @@ class ReviewService:
     @staticmethod
     def get_user_reviews(user, include_inactive: bool = True):
         """
-        Get all reviews by a user.
+        Get all reviews by a user with optimized prefetching.
 
         Args:
             user: User instance
             include_inactive: Whether to include inactive reviews
 
         Returns:
-            QuerySet of user's reviews
+            QuerySet of user's reviews with all related data prefetched
         """
+        from django.db.models import Prefetch
+        from apps.reviews.models import ReviewReply
+
+        # Prefetch only active replies with their user profiles
+        active_replies_prefetch = Prefetch(
+            "replies",
+            queryset=ReviewReply.objects.filter(is_active=True).select_related(
+                "user",
+                "user__customerprofile",
+                "user__shopkeeperprofile",
+            ),
+            to_attr="active_replies",
+        )
+
         queryset = (
             Review.objects.filter(user=user)
-            .select_related("product", "user")
-            .prefetch_related("likes", "replies")
+            .select_related(
+                "product",
+                "user",
+                "user__customerprofile",
+                "user__shopkeeperprofile",
+            )
+            .prefetch_related(
+                "likes",
+                "likes__user",
+                "likes__user__customerprofile",
+                active_replies_prefetch,
+            )
         )
 
         if not include_inactive:
@@ -72,21 +96,87 @@ class ReviewService:
         return queryset.order_by("-created_at")
 
     @staticmethod
+    def get_all_reviews(only_active: bool = True):
+        """
+        Get all reviews with optimized prefetching.
+
+        Args:
+            only_active: Whether to only return active reviews
+
+        Returns:
+            QuerySet of all reviews with all related data prefetched
+        """
+        from django.db.models import Prefetch
+        from apps.reviews.models import ReviewReply
+
+        # Prefetch only active replies with their user profiles
+        active_replies_prefetch = Prefetch(
+            "replies",
+            queryset=ReviewReply.objects.filter(is_active=True).select_related(
+                "user",
+                "user__customerprofile",
+                "user__shopkeeperprofile",
+            ),
+            to_attr="active_replies",
+        )
+
+        queryset = Review.objects.select_related(
+            "product",
+            "user",
+            "user__customerprofile",
+            "user__shopkeeperprofile",
+        ).prefetch_related(
+            "likes",
+            "likes__user",
+            "likes__user__customerprofile",
+            active_replies_prefetch,
+        )
+
+        if only_active:
+            queryset = queryset.filter(is_active=True)
+
+        return queryset.order_by("-created_at")
+
+    @staticmethod
     def get_product_reviews(product_id: int, only_active: bool = True):
         """
-        Get all reviews for a product.
+        Get all reviews for a product with optimized prefetching.
 
         Args:
             product_id: Product ID
             only_active: Whether to only return active reviews
 
         Returns:
-            QuerySet of product reviews
+            QuerySet of product reviews with all related data prefetched
         """
+        from django.db.models import Prefetch
+        from apps.reviews.models import ReviewReply
+
+        # Prefetch only active replies with their user profiles
+        active_replies_prefetch = Prefetch(
+            "replies",
+            queryset=ReviewReply.objects.filter(is_active=True).select_related(
+                "user",
+                "user__customerprofile",
+                "user__shopkeeperprofile",
+            ),
+            to_attr="active_replies",
+        )
+
         queryset = (
             Review.objects.filter(product_id=product_id)
-            .select_related("product", "user")
-            .prefetch_related("likes", "replies")
+            .select_related(
+                "product",
+                "user",
+                "user__customerprofile",
+                "user__shopkeeperprofile",
+            )
+            .prefetch_related(
+                "likes",
+                "likes__user",
+                "likes__user__customerprofile",
+                active_replies_prefetch,
+            )
         )
 
         if only_active:
