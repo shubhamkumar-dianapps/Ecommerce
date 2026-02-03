@@ -51,7 +51,7 @@ class AddressSerializer(serializers.ModelSerializer):
             Dict: Validated and cleaned data
 
         Raises:
-            ValidationError: If data is invalid
+            ValidationError: If data is invalid or duplicate exists
         """
         # Ensure required fields are present
         if not attrs.get("address_line_1"):
@@ -73,6 +73,27 @@ class AddressSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"postal_code": e.messages[0] if e.messages else str(e)}
                 )
+
+        # Check for duplicate address (only on create, not update)
+        if not self.instance:
+            request = self.context.get("request")
+            if request and request.user.is_authenticated:
+                existing = Address.objects.filter(
+                    user=request.user,
+                    address_line_1__iexact=attrs.get("address_line_1", ""),
+                    city__iexact=attrs.get("city", ""),
+                    postal_code=attrs.get("postal_code", ""),
+                ).first()
+
+                if existing:
+                    raise serializers.ValidationError(
+                        {
+                            "non_field_errors": [
+                                "An address with this street, city, and postal code already exists."
+                            ],
+                            "existing_address_id": str(existing.id),
+                        }
+                    )
 
         return attrs
 

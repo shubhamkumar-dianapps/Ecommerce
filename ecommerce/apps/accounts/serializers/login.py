@@ -1,4 +1,3 @@
-from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from apps.accounts.models import User
@@ -12,13 +11,15 @@ class LoginSerializer(TokenObtainPairSerializer):
     - User not found (email doesn't exist)
     - Invalid password (email exists but wrong password)
     - Inactive account
+
+    Optimized to minimize database queries.
     """
 
     def validate(self, attrs):
         email = attrs.get("email", "")
         password = attrs.get("password", "")
 
-        # Check if user exists
+        # Check if user exists (Query 1)
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -32,19 +33,16 @@ class LoginSerializer(TokenObtainPairSerializer):
                 {"email": "This account has been deactivated. Please contact support."}
             )
 
-        # Check password
-        authenticated_user = authenticate(
-            request=self.context.get("request"),
-            username=email,
-            password=password,
-        )
-
-        if authenticated_user is None:
+        # Check password directly (avoids authenticate() extra query)
+        if not user.check_password(password):
             raise serializers.ValidationError(
                 {"password": "Invalid password. Please try again."}
             )
 
-        # Call parent validate for token generation
+        # Set user for parent class to avoid another query
+        self.user = user
+
+        # Call parent for token generation (will reuse self.user)
         data = super().validate(attrs)
         data["user"] = {
             "email": self.user.email,
