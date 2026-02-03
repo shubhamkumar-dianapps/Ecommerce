@@ -1,6 +1,5 @@
 from django.core.mail import send_mail
 from django.conf import settings
-from django.utils import timezone
 from apps.accounts.models import EmailVerificationToken
 from apps.accounts import constants
 
@@ -75,10 +74,8 @@ class EmailService:
         if user.email_verified:
             return False, "Email is already verified"
 
-        # Invalidate old unused tokens
-        EmailVerificationToken.objects.filter(
-            user=user, is_used=False, expires_at__gt=timezone.now()
-        ).update(is_used=True)
+        # Delete old unused tokens
+        EmailVerificationToken.objects.filter(user=user, is_used=False).delete()
 
         # Send new verification email
         EmailService.send_verification_email(user)
