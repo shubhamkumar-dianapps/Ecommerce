@@ -27,7 +27,7 @@ class CartViewSet(viewsets.ViewSet):
 
     def list(self, request):
         """Get user's cart."""
-        cart = CartService.get_or_create_cart(request.user)
+        cart = CartService.get_cart_with_items(request.user)
         serializer = CartSerializer(cart, context={"request": request})
         return Response(serializer.data)
 
@@ -56,7 +56,9 @@ class CartViewSet(viewsets.ViewSet):
             )
 
         try:
-            cart, created = CartService.add_item(request.user, product_id, quantity)
+            CartService.add_item(request.user, product_id, quantity)
+            # Use optimized query for serialization
+            cart = CartService.get_cart_with_items(request.user)
             serializer = CartSerializer(cart, context={"request": request})
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Product.DoesNotExist:
@@ -98,7 +100,9 @@ class CartViewSet(viewsets.ViewSet):
             )
 
         try:
-            cart = CartService.update_item(request.user, item_id, quantity)
+            CartService.update_item(request.user, item_id, quantity)
+            # Use optimized query for serialization
+            cart = CartService.get_cart_with_items(request.user)
             serializer = CartSerializer(cart, context={"request": request})
             return Response(serializer.data)
         except Cart.DoesNotExist:
@@ -133,7 +137,9 @@ class CartViewSet(viewsets.ViewSet):
             )
 
         try:
-            cart = CartService.remove_item(request.user, item_id)
+            CartService.remove_item(request.user, item_id)
+            # Use optimized query for serialization
+            cart = CartService.get_cart_with_items(request.user)
             serializer = CartSerializer(cart, context={"request": request})
             return Response(serializer.data)
         except Cart.DoesNotExist:
@@ -149,7 +155,9 @@ class CartViewSet(viewsets.ViewSet):
     def clear(self, request):
         """Clear all items from the cart."""
         try:
-            cart = CartService.clear_cart(request.user)
+            CartService.clear_cart(request.user)
+            # Use optimized query for serialization
+            cart = CartService.get_cart_with_items(request.user)
             serializer = CartSerializer(cart, context={"request": request})
             return Response(serializer.data)
         except Cart.DoesNotExist:

@@ -28,6 +28,43 @@ class CartService:
         return cart
 
     @staticmethod
+    def get_cart_with_items(user) -> Cart:
+        """
+        Get cart with all related data prefetched for serialization.
+
+        Optimized to avoid N+1 queries when serializing cart items.
+
+        Args:
+            user: User instance
+
+        Returns:
+            Cart instance with prefetched items, products, categories, brands
+        """
+        from django.db.models import Prefetch
+        from apps.products.models import ProductImage
+
+        # Prefetch primary images only
+        primary_image_prefetch = Prefetch(
+            "product__images",
+            queryset=ProductImage.objects.filter(is_primary=True),
+            to_attr="primary_images",
+        )
+
+        cart, _ = Cart.objects.prefetch_related(
+            Prefetch(
+                "items",
+                queryset=CartItem.objects.select_related(
+                    "product",
+                    "product__category",
+                    "product__brand",
+                    "product__inventory",
+                ).prefetch_related(primary_image_prefetch),
+            )
+        ).get_or_create(user=user)
+
+        return cart
+
+    @staticmethod
     @transaction.atomic
     def add_item(user, product_id: int, quantity: int = 1) -> Tuple[Cart, bool]:
         """
