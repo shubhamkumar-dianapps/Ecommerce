@@ -52,3 +52,4 @@ htmlcov/
 # Misc
 *.bak
 *.tmp
+docs/BACKEND_ARCHITECTURE.md
