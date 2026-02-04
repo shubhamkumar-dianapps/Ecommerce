@@ -13,8 +13,12 @@ class PasswordConfirmationMixin:
     """
     Mixin to add password confirmation validation to serializers.
 
-    Adds password_confirm field and validates that it matches password field.
+    Allows configuring custom field names via 'password_field' and 'confirm_field'.
+    Defaults to 'password' and 'password_confirm'.
     """
+
+    password_field = "password"
+    confirm_field = "password_confirm"
 
     def validate(self, attrs: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -24,17 +28,17 @@ class PasswordConfirmationMixin:
             attrs: Validated data dictionary
 
         Returns:
-            Validated data with password_confirm removed
+            Validated data with confirm_field removed
 
         Raises:
             ValidationError: If passwords don't match
         """
-        password = attrs.get("password")
-        password_confirm = attrs.pop("password_confirm", None)
+        password = attrs.get(self.password_field)
+        password_confirm = attrs.pop(self.confirm_field, None)
 
         if password and password_confirm and password != password_confirm:
             raise serializers.ValidationError(
-                {"password_confirm": constants.PASSWORD_MISMATCH_ERROR}
+                {self.confirm_field: constants.PASSWORD_MISMATCH_ERROR}
             )
 
         # Call parent validate if exists

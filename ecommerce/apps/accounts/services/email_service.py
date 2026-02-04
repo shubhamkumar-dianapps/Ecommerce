@@ -86,3 +86,39 @@ class EmailService:
         EmailService.send_verification_email(user)
 
         return True, "Verification email sent"
+
+    @staticmethod
+    def send_password_reset_email(user, reset_url, expiry_hours):
+        """Send password reset email"""
+        subject = constants.EMAIL_PASSWORD_RESET_SUBJECT
+        message = constants.EMAIL_PASSWORD_RESET_TEMPLATE.format(
+            email=user.email,
+            reset_url=reset_url,
+            expiry_hours=expiry_hours,
+        )
+
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
+
+    @staticmethod
+    def send_email_change_email(new_email, verification_url, expiry_hours):
+        """Send email change verification email to the NEW address"""
+        subject = constants.EMAIL_CHANGE_SUBJECT
+        message = constants.EMAIL_CHANGE_TEMPLATE.format(
+            new_email=new_email,
+            verification_url=verification_url,
+            expiry_hours=expiry_hours,
+        )
+
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [new_email],
+            fail_silently=False,
+        )

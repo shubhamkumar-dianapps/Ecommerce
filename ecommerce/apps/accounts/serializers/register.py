@@ -9,7 +9,7 @@ from typing import Dict, Any
 from rest_framework import serializers
 from apps.accounts.models import User, CustomerProfile, ShopKeeperProfile
 from apps.accounts import constants
-from apps.accounts.field_validators import (
+from apps.accounts.fields import (
     PasswordField,
     PasswordConfirmField,
     GSTNumberField,

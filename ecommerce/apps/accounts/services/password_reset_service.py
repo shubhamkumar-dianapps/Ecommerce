@@ -7,11 +7,10 @@ Business logic for password reset and email change flows.
 import logging
 from typing import Tuple
 from django.conf import settings
-from django.core.mail import send_mail
 from django.db import transaction
 from apps.accounts.models import User, PasswordResetToken, EmailChangeToken
 from apps.accounts.services.audit_service import AuditService
-from apps.accounts import constants
+from apps.accounts.services.email_service import EmailService
 
 # Get security logger
 security_logger = logging.getLogger("security")
@@ -66,17 +65,11 @@ class PasswordResetService:
         # Build reset URL
         reset_url = f"{settings.FRONTEND_URL}/reset-password/{token.token}"
 
-        # Send email
-        send_mail(
-            subject=constants.EMAIL_PASSWORD_RESET_SUBJECT,
-            message=constants.EMAIL_PASSWORD_RESET_TEMPLATE.format(
-                email=user.email,
-                reset_url=reset_url,
-                expiry_hours=PasswordResetToken.EXPIRY_HOURS,
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
+        # Send email using centralized service
+        EmailService.send_password_reset_email(
+            user=user,
+            reset_url=reset_url,
+            expiry_hours=PasswordResetToken.EXPIRY_HOURS,
         )
 
         return True, "If an account exists, a reset link has been sent"
@@ -130,23 +123,6 @@ class PasswordResetService:
 class EmailChangeService:
     """Service for email change operations."""
 
-    EMAIL_CHANGE_SUBJECT = "Verify your new email address"
-    EMAIL_CHANGE_TEMPLATE = """
-Hi,
-
-You requested to change your email address to {new_email}.
-
-Please click the link below to confirm this change:
-{verification_url}
-
-This link will expire in {expiry_hours} hours.
-
-If you didn't request this change, please ignore this email and your email will remain unchanged.
-
-Thanks,
-The E-commerce Team
-"""
-
     @staticmethod
     def request_email_change(
         user: User, new_email: str, ip_address: str = None, user_agent: str = ""
@@ -189,17 +165,11 @@ The E-commerce Team
         # Build verification URL
         verification_url = f"{settings.FRONTEND_URL}/verify-email-change/{token.token}"
 
-        # Send email to NEW address
-        send_mail(
-            subject=EmailChangeService.EMAIL_CHANGE_SUBJECT,
-            message=EmailChangeService.EMAIL_CHANGE_TEMPLATE.format(
-                new_email=new_email,
-                verification_url=verification_url,
-                expiry_hours=EmailChangeToken.EXPIRY_HOURS,
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[new_email],  # Send to NEW email
-            fail_silently=False,
+        # Send email to NEW address using centralized service
+        EmailService.send_email_change_email(
+            new_email=new_email,
+            verification_url=verification_url,
+            expiry_hours=EmailChangeToken.EXPIRY_HOURS,
         )
 
         return True, f"Verification email sent to {new_email}"

@@ -5,8 +5,9 @@ Serializers for password reset flow.
 """
 
 from rest_framework import serializers
-from django.contrib.auth.password_validation import validate_password
 from apps.accounts.models import User
+from apps.accounts.fields import PasswordField, PasswordConfirmField
+from apps.accounts.mixins import PasswordConfirmationMixin
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):
@@ -20,25 +21,17 @@ class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
 
-class PasswordResetConfirmSerializer(serializers.Serializer):
+class PasswordResetConfirmSerializer(serializers.Serializer, PasswordConfirmationMixin):
     """
     Serializer for confirming password reset with new password.
     """
 
-    token = serializers.UUIDField()
-    new_password = serializers.CharField(
-        min_length=8,
-        write_only=True,
-        validators=[validate_password],
-    )
-    confirm_password = serializers.CharField(min_length=8, write_only=True)
+    password_field = "new_password"
+    confirm_field = "confirm_password"
 
-    def validate(self, attrs):
-        if attrs["new_password"] != attrs["confirm_password"]:
-            raise serializers.ValidationError(
-                {"confirm_password": "Passwords do not match"}
-            )
-        return attrs
+    token = serializers.UUIDField()
+    new_password = PasswordField()
+    confirm_password = PasswordConfirmField()
 
 
 class EmailChangeRequestSerializer(serializers.Serializer):

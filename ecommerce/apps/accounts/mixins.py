@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from apps.accounts.services import EmailService, AuditService
 from apps.accounts import constants
+from apps.accounts.serializer_mixins import PasswordConfirmationMixin  # noqa: F401
 
 
 class EmailVerificationMixin:

@@ -57,6 +57,24 @@ Thanks,
 The E-commerce Team
 """
 
+# Email Change
+EMAIL_CHANGE_SUBJECT = "Verify your new email address"
+EMAIL_CHANGE_TEMPLATE = """
+Hi,
+
+You requested to change your email address to {new_email}.
+
+Please click the link below to confirm this change:
+{verification_url}
+
+This link will expire in {expiry_hours} hours.
+
+If you didn't request this change, please ignore this email and your email will remain unchanged.
+
+Thanks,
+The E-commerce Team
+"""
+
 # TODO: Implement welcome email flow using these constants
 EMAIL_WELCOME_SUBJECT = "Welcome to E-commerce!"
 EMAIL_WELCOME_TEMPLATE = """
