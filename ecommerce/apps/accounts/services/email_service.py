@@ -1,6 +1,7 @@
 from django.core.mail import send_mail
 from django.conf import settings
-from apps.accounts.models import EmailVerificationToken
+from django.db import transaction
+from apps.accounts.models import EmailVerificationToken, User
 from apps.accounts import constants
 
 
@@ -38,13 +39,17 @@ class EmailService:
         return token
 
     @staticmethod
+    @transaction.atomic
     def verify_email(token_value):
         """
         Verify email using token.
         Returns (success: bool, message: str, user: User|None)
         """
         try:
-            token = EmailVerificationToken.objects.get(token=token_value)
+            # Lock the token row
+            token = EmailVerificationToken.objects.select_for_update().get(
+                token=token_value
+            )
 
             if not token.is_valid():
                 if token.is_used:
@@ -55,8 +60,8 @@ class EmailService:
             # Mark token as used
             token.mark_as_used()
 
-            # Mark user email as verified
-            user = token.user
+            # Mark user email as verified with database-level locking
+            user = User.objects.select_for_update().get(pk=token.user_id)
             user.email_verified = True
             user.save(update_fields=["email_verified"])
 
