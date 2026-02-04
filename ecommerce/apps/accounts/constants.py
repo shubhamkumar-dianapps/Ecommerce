@@ -131,6 +131,10 @@ AUDIT_ACTION_SESSION_REVOKED = "SESSION_REVOKED"
 
 AUTH_RATE = "5/m"
 AUTH_RATE_MESSAGE = "Too many authentication attempts. Please try again in a minute."
+EMAIL_RATE = (
+    "3/h"  # Strict limit for email-sending endpoints (password reset, email change)
+)
+EMAIL_RATE_MESSAGE = "Too many email requests. Please try again later."
 MAX_ACTIVE_SESSIONS_PER_USER = 5
 MAX_ACTIVE_SESSIONS_EXCEEDED = (
     "Maximum active sessions limit reached. Please logout from another device first."

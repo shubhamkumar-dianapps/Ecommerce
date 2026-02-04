@@ -18,6 +18,8 @@ from apps.accounts.services.password_reset_service import (
     PasswordResetService,
     EmailChangeService,
 )
+from apps.accounts.views.auth import EmailThrottle
+from apps.accounts.utils import get_client_ip, get_user_agent
 
 
 class PasswordResetRequestView(APIView):
@@ -33,6 +35,7 @@ class PasswordResetRequestView(APIView):
     """
 
     permission_classes = [AllowAny]
+    throttle_classes = [EmailThrottle]
     serializer_class = PasswordResetRequestSerializer
 
     def post(self, request):
@@ -40,8 +43,8 @@ class PasswordResetRequestView(APIView):
         serializer.is_valid(raise_exception=True)
 
         # Get client info for security logging
-        ip_address = self.get_client_ip(request)
-        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        ip_address = get_client_ip(request)
+        user_agent = get_user_agent(request)
 
         success, message = PasswordResetService.request_password_reset(
             email=serializer.validated_data["email"],
@@ -51,12 +54,6 @@ class PasswordResetRequestView(APIView):
 
         # Always return success to prevent email enumeration
         return Response({"message": message}, status=status.HTTP_200_OK)
-
-    def get_client_ip(self, request):
-        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-        if x_forwarded_for:
-            return x_forwarded_for.split(",")[0].strip()
-        return request.META.get("REMOTE_ADDR")
 
 
 class PasswordResetConfirmView(APIView):
@@ -102,6 +99,7 @@ class EmailChangeRequestView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [EmailThrottle]
     serializer_class = EmailChangeRequestSerializer
 
     def post(self, request):
