@@ -31,3 +31,6 @@ black==25.12.0
 
 # YAML support
 PyYAML==6.0.3
+
+# PostgreSQL
+psycopg2-binary==2.9.11

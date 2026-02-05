@@ -11,6 +11,9 @@ def create_user_profile(sender, instance, created, **kwargs):
     Note: We use .create() instead of .get_or_create() since this only runs
     when created=True, ensuring we only create the profile once.
     """
+    if kwargs.get("raw"):
+        return
+
     if created:
         if instance.role == User.Role.ADMIN:
             AdminProfile.objects.create(user=instance)
