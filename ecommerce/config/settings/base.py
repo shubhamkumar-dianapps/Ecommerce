@@ -14,12 +14,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("SECRET_KEY", default="django-insecure-change-me")
+SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = env.bool("DEBUG")
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+
+# Throttle rates from environment
+THROTTLE_RATE_ANON = env("THROTTLE_RATE_ANON")
+THROTTLE_RATE_USER = env("THROTTLE_RATE_USER")
+THROTTLE_RATE_AUTH = env("THROTTLE_RATE_AUTH")
 
 # Application definition
 
@@ -71,18 +76,18 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "10/minute",  # For anonymous users
-        "user": "1000/hour",  # For authenticated users
-        "auth": "5/minute",  # For auth endpoints (login, register)
+        "anon": THROTTLE_RATE_ANON,  # For anonymous users
+        "user": THROTTLE_RATE_USER,  # For authenticated users
+        "auth": THROTTLE_RATE_AUTH,  # For auth endpoints (login, register)
     },
 }
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
-        minutes=env.int("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", default=60)
+        minutes=env.int("JWT_ACCESS_TOKEN_LIFETIME_MINUTES")
     ),
     "REFRESH_TOKEN_LIFETIME": timedelta(
-        days=env.int("JWT_REFRESH_TOKEN_LIFETIME_DAYS", default=1)
+        days=env.int("JWT_REFRESH_TOKEN_LIFETIME_DAYS")
     ),
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
@@ -107,9 +112,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # Database defaults
-DATABASES = {
-    "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
-}
+DATABASES = {"default": env.db("DATABASE_URL")}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -137,19 +140,20 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # Email Configuration
-EMAIL_BACKEND = env(
-    "EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
-)
-EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
-EMAIL_PORT = env.int("EMAIL_PORT", default=587)
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
-EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@ecommerce.com")
+EMAIL_BACKEND = env("EMAIL_BACKEND")
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_PORT = env.int("EMAIL_PORT")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 
 # Frontend URL
-FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
+FRONTEND_URL = env("FRONTEND_URL")
 
 # Phone Number Settings
 PHONENUMBER_DEFAULT_REGION = "IN"
 PHONENUMBER_DB_FORMAT = "E164"
+
+# Logging Configuration
+from .logging import LOGGING  # noqa: E402, F401
