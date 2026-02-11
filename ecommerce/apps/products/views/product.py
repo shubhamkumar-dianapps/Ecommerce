@@ -4,6 +4,7 @@ Product Views
 Production-ready views with proper permissions, pagination, and filtering.
 """
 
+import environ
 from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -23,6 +24,8 @@ from apps.products.pagination import (
     CategoryPagination,
     BrandPagination,
 )
+
+env = environ.Env()
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -55,6 +58,31 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
             children_count=Count("children")
         )
 
+    def list(self, request, *args, **kwargs):
+        """List categories with Redis caching (1 hour TTL)."""
+        from apps.core.cache_utils import cache_logger
+
+        cache_key = "categories:list:all"
+        cached_data = cache_logger.get(cache_key)
+
+        if cached_data is not None:
+            return Response(cached_data)
+
+        # Cache miss - fetch from DB
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            response_data = self.get_paginated_response(serializer.data).data
+        else:
+            serializer = self.get_serializer(queryset, many=True)
+            response_data = serializer.data
+
+        # Cache for 1 hour (3600 seconds)
+        cache_logger.set(cache_key, response_data, timeout=env("CACHE_TIMEOUT"))
+        return Response(response_data)
+
 
 class BrandViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -75,6 +103,31 @@ class BrandViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
     lookup_field = "slug"
     pagination_class = BrandPagination
+
+    def list(self, request, *args, **kwargs):
+        """List brands with Redis caching (1 hour TTL)."""
+        from apps.core.cache_utils import cache_logger
+
+        cache_key = "brands:list:all"
+        cached_data = cache_logger.get(cache_key)
+
+        if cached_data is not None:
+            return Response(cached_data)
+
+        # Cache miss - fetch from DB
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            response_data = self.get_paginated_response(serializer.data).data
+        else:
+            serializer = self.get_serializer(queryset, many=True)
+            response_data = serializer.data
+
+        # Cache for configured timeout
+        cache_logger.set(cache_key, response_data, timeout=env.int("CACHE_TIMEOUT"))
+        return Response(response_data)
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -163,9 +216,79 @@ class ProductViewSet(viewsets.ModelViewSet):
             return ProductDetailSerializer
         return ProductListSerializer
 
+    def list(self, request, *args, **kwargs):
+        """List products with Redis caching (5 min TTL)."""
+        from apps.core.cache_utils import cache_logger
+
+        # Build cache key from query params
+        query_params = request.query_params.dict()
+        cache_key = f"products:list:{hash(frozenset(query_params.items()))}"
+        cached_data = cache_logger.get(cache_key)
+
+        if cached_data is not None:
+            return Response(cached_data)
+
+        # Cache miss - fetch from DB
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            response_data = self.get_paginated_response(serializer.data).data
+        else:
+            serializer = self.get_serializer(queryset, many=True)
+            response_data = serializer.data
+
+        # Cache for configured timeout
+        cache_logger.set(cache_key, response_data, timeout=env.int("CACHE_TIMEOUT"))
+        return Response(response_data)
+
+    def retrieve(self, request, *args, **kwargs):
+        """Retrieve product detail with Redis caching (10 min TTL)."""
+        from apps.core.cache_utils import cache_logger
+
+        slug = kwargs.get("slug")
+        cache_key = f"products:detail:{slug}"
+        cached_data = cache_logger.get(cache_key)
+
+        if cached_data is not None:
+            return Response(cached_data)
+
+        # Cache miss - fetch from DB
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        response_data = serializer.data
+
+        # Cache for configured timeout
+        cache_logger.set(cache_key, response_data, timeout=env.int("CACHE_TIMEOUT"))
+        return Response(response_data)
+
     def perform_create(self, serializer):
-        """Set shopkeeper as product owner when creating"""
+        """Set shopkeeper as product owner and invalidate cache"""
+        from apps.core.cache_utils import cache_logger
+
         serializer.save(shopkeeper=self.request.user)
+        # Invalidate product list cache
+        cache_logger.invalidate_pattern("products:list:*")
+
+    def perform_update(self, serializer):
+        """Update product and invalidate cache"""
+        from apps.core.cache_utils import cache_logger
+
+        instance = serializer.save()
+        # Invalidate both list and detail cache
+        cache_logger.invalidate_pattern("products:list:*")
+        cache_logger.delete(f"products:detail:{instance.slug}")
+
+    def perform_destroy(self, instance):
+        """Delete product and invalidate cache"""
+        from apps.core.cache_utils import cache_logger
+
+        slug = instance.slug
+        instance.delete()
+        # Invalidate both list and detail cache
+        cache_logger.invalidate_pattern("products:list:*")
+        cache_logger.delete(f"products:detail:{slug}")
 
     def destroy(self, request, *args, **kwargs):
         """Delete product with confirmation message."""

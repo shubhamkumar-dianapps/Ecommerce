@@ -34,3 +34,12 @@ PyYAML==6.0.3
 
 # PostgreSQL
 psycopg2-binary==2.9.11
+
+# Celery & Redis
+celery==5.4.0
+redis==5.2.1
+django-redis==5.4.0
+django-celery-beat==2.8.1
+
+# Error Tracking
+sentry-sdk[django]==2.19.2

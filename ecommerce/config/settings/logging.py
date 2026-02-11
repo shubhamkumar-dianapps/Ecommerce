@@ -2,6 +2,7 @@
 Logging Configuration
 
 Comprehensive file-based logging with different log files for different types.
+Console logging is enabled only in DEBUG mode.
 """
 
 import os
@@ -14,33 +15,42 @@ LOGS_DIR = BASE_DIR / "logs"
 # Create logs directory if it doesn't exist
 os.makedirs(LOGS_DIR, exist_ok=True)
 
+# Determine if we're in DEBUG mode (will be set by settings/base.py)
+DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "yes")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     # Formatters define how log messages look
     "formatters": {
         "verbose": {
-            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} [{request_id}] {message}",
             "style": "{",
         },
         "simple": {
-            "format": "{levelname} {asctime} {message}",
+            "format": "{levelname} {asctime} [{request_id}] {message}",
             "style": "{",
         },
         "security": {
-            "format": "[{asctime}] {levelname} | {name} | {message}",
+            "format": "[{asctime}] {levelname} | {name} | [{request_id}] | {message}",
             "style": "{",
             "datefmt": "%Y-%m-%d %H:%M:%S",
         },
         "request": {
-            "format": "[{asctime}] {levelname} {status_code} {request.method} {request.path}",
+            "format": "[{asctime}] {levelname} {status_code} {request.method} {request.path} [{request_id}]",
             "style": "{",
             "datefmt": "%Y-%m-%d %H:%M:%S",
         },
     },
+    # Filters add contextual information to log records
+    "filters": {
+        "request_id": {
+            "()": "apps.core.logging_filters.RequestIDFilter",
+        },
+    },
     # Handlers define where logs go
     "handlers": {
-        # Console output (for development)
+        # Console output (for development only)
         "console": {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
@@ -54,6 +64,7 @@ LOGGING = {
             "maxBytes": 10 * 1024 * 1024,  # 10 MB
             "backupCount": 5,
             "formatter": "verbose",
+            "filters": ["request_id"],
             "encoding": "utf-8",
         },
         # Error logs (WARNING and above)
@@ -64,6 +75,7 @@ LOGGING = {
             "maxBytes": 10 * 1024 * 1024,  # 10 MB
             "backupCount": 10,
             "formatter": "verbose",
+            "filters": ["request_id"],
             "encoding": "utf-8",
         },
         # Security/Audit logs (logins, password changes, etc.)
@@ -74,6 +86,7 @@ LOGGING = {
             "maxBytes": 10 * 1024 * 1024,  # 10 MB
             "backupCount": 30,  # Keep more security logs
             "formatter": "security",
+            "filters": ["request_id"],
             "encoding": "utf-8",
         },
         # Database/SQL logs
@@ -94,6 +107,7 @@ LOGGING = {
             "maxBytes": 10 * 1024 * 1024,  # 10 MB
             "backupCount": 5,
             "formatter": "verbose",
+            "filters": ["request_id"],
             "encoding": "utf-8",
         },
         # Payment/Transaction logs (critical, keep longer)
@@ -106,17 +120,37 @@ LOGGING = {
             "formatter": "verbose",
             "encoding": "utf-8",
         },
+        # Redis cache logs
+        "file_redis": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "redis.log"),
+            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "backupCount": 10,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
+        # Celery task logs
+        "file_celery": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "celery.log"),
+            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "backupCount": 10,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
     },
     # Loggers define which handlers are used for which modules
     "loggers": {
         # Root logger - catches everything
         "": {
-            "handlers": ["console", "file_general", "file_error"],
+            "handlers": ["file_general", "file_error"] + (["console"] if DEBUG else []),
             "level": "INFO",
         },
         # Django framework logs
         "django": {
-            "handlers": ["console", "file_general"],
+            "handlers": ["file_general"] + (["console"] if DEBUG else []),
             "level": "INFO",
             "propagate": False,
         },
@@ -135,18 +169,20 @@ LOGGING = {
         # Database query logs (set to DEBUG to log all SQL)
         "django.db.backends": {
             "handlers": ["file_database"],
-            "level": "WARNING",  # Set to DEBUG to log all queries
+            "level": "DEBUG"
+            if os.environ.get("LOG_SQL", "False").lower() in ("true", "1", "yes")
+            else "WARNING",
             "propagate": False,
         },
         # Our custom security logger (used by AuditService)
         "security": {
-            "handlers": ["file_security", "console"],
+            "handlers": ["file_security"] + (["console"] if DEBUG else []),
             "level": "INFO",
             "propagate": False,
         },
         # API logger for REST framework
         "api": {
-            "handlers": ["file_api", "console"],
+            "handlers": ["file_api"] + (["console"] if DEBUG else []),
             "level": "INFO",
             "propagate": False,
         },
@@ -177,6 +213,18 @@ LOGGING = {
         # Products app logger
         "apps.products": {
             "handlers": ["file_general"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Redis cache logger
+        "redis": {
+            "handlers": ["file_redis"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Celery tasks logger
+        "celery": {
+            "handlers": ["file_celery"],
             "level": "INFO",
             "propagate": False,
         },
