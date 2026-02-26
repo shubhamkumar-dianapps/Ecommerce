@@ -17,8 +17,13 @@ class AuditLog(models.Model):
         PASSWORD_RESET_REQUEST = "PASSWORD_RESET_REQUEST", "Password Reset Request"
         PASSWORD_RESET_COMPLETE = "PASSWORD_RESET_COMPLETE", "Password Reset Complete"
         EMAIL_VERIFICATION = "EMAIL_VERIFICATION", "Email Verification"
+        EMAIL_CHANGE_REQUEST = "EMAIL_CHANGE_REQUEST", "Email Change Request"
+        EMAIL_CHANGE_COMPLETE = "EMAIL_CHANGE_COMPLETE", "Email Change Complete"
+        PHONE_CHANGE = "PHONE_CHANGE", "Phone Number Change"
         PROFILE_UPDATE = "PROFILE_UPDATE", "Profile Update"
         ACCOUNT_CREATED = "ACCOUNT_CREATED", "Account Created"
+        ACCOUNT_DEACTIVATED = "ACCOUNT_DEACTIVATED", "Account Deactivated"
+        ACCOUNT_REACTIVATED = "ACCOUNT_REACTIVATED", "Account Reactivated"
         SESSION_REVOKED = "SESSION_REVOKED", "Session Revoked"
         TWO_FACTOR_ENABLED = "TWO_FACTOR_ENABLED", "Two-Factor Authentication Enabled"
         TWO_FACTOR_DISABLED = (

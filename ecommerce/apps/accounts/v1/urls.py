@@ -21,6 +21,12 @@ from apps.accounts.views.session_views import (
     RevokeSessionView,
     RevokeAllSessionsView,
 )
+from apps.accounts.views.password_reset import (
+    PasswordResetRequestView,
+    PasswordResetConfirmView,
+    EmailChangeRequestView,
+    EmailChangeConfirmView,
+)
 from rest_framework_simplejwt.views import TokenRefreshView
 
 # Authentication endpoints
@@ -68,5 +74,40 @@ session_patterns = [
     ),
 ]
 
+# Password reset endpoints
+password_reset_patterns = [
+    path(
+        "password-reset/",
+        PasswordResetRequestView.as_view(),
+        name="password_reset_request",
+    ),
+    path(
+        "password-reset/confirm/",
+        PasswordResetConfirmView.as_view(),
+        name="password_reset_confirm",
+    ),
+]
+
+# Email change endpoints
+email_change_patterns = [
+    path(
+        "email-change/",
+        EmailChangeRequestView.as_view(),
+        name="email_change_request",
+    ),
+    path(
+        "email-change/confirm/",
+        EmailChangeConfirmView.as_view(),
+        name="email_change_confirm",
+    ),
+]
+
 # Combine all patterns
-urlpatterns = auth_patterns + profile_patterns + email_patterns + session_patterns
+urlpatterns = (
+    auth_patterns
+    + profile_patterns
+    + email_patterns
+    + session_patterns
+    + password_reset_patterns
+    + email_change_patterns
+)

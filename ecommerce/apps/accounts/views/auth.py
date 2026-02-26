@@ -29,6 +29,18 @@ class AuthThrottle(AnonRateThrottle):
     scope = "auth"
 
 
+class EmailThrottle(AnonRateThrottle):
+    """
+    Strict throttle for email-sending endpoints.
+
+    Prevents abuse of password reset, email change, and verification endpoints
+    which trigger costly email API calls.
+    """
+
+    rate = constants.EMAIL_RATE
+    scope = "email"
+
+
 class CustomerRegistrationView(RegistrationMixin, generics.CreateAPIView):
     """
     Customer Registration Endpoint

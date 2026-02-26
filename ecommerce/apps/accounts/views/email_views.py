@@ -8,12 +8,14 @@ from apps.accounts.serializers.email_verification import (
 )
 from apps.accounts.services import EmailService, AuditService
 from apps.accounts.models import User
+from apps.accounts.views.auth import EmailThrottle
 
 
 class VerifyEmailView(APIView):
     """View to verify email using token"""
 
     permission_classes = [AllowAny]
+    throttle_classes = [EmailThrottle]
     serializer_class = EmailVerificationSerializer
 
     def post(self, request):
@@ -38,6 +40,7 @@ class ResendVerificationEmailView(APIView):
     """View to resend verification email"""
 
     permission_classes = [AllowAny]
+    throttle_classes = [EmailThrottle]
     serializer_class = ResendVerificationSerializer
 
     def post(self, request):

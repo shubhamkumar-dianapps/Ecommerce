@@ -57,6 +57,24 @@ Thanks,
 The E-commerce Team
 """
 
+# Email Change
+EMAIL_CHANGE_SUBJECT = "Verify your new email address"
+EMAIL_CHANGE_TEMPLATE = """
+Hi,
+
+You requested to change your email address to {new_email}.
+
+Please click the link below to confirm this change:
+{verification_url}
+
+This link will expire in {expiry_hours} hours.
+
+If you didn't request this change, please ignore this email and your email will remain unchanged.
+
+Thanks,
+The E-commerce Team
+"""
+
 # TODO: Implement welcome email flow using these constants
 EMAIL_WELCOME_SUBJECT = "Welcome to E-commerce!"
 EMAIL_WELCOME_TEMPLATE = """
@@ -131,6 +149,10 @@ AUDIT_ACTION_SESSION_REVOKED = "SESSION_REVOKED"
 
 AUTH_RATE = "5/m"
 AUTH_RATE_MESSAGE = "Too many authentication attempts. Please try again in a minute."
+EMAIL_RATE = (
+    "3/h"  # Strict limit for email-sending endpoints (password reset, email change)
+)
+EMAIL_RATE_MESSAGE = "Too many email requests. Please try again later."
 MAX_ACTIVE_SESSIONS_PER_USER = 5
 MAX_ACTIVE_SESSIONS_EXCEEDED = (
     "Maximum active sessions limit reached. Please logout from another device first."

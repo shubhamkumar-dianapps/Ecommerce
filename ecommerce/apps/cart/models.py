@@ -1,8 +1,9 @@
 from django.db import models
-from django.db.models import Sum, F
+from django.db.models import Sum, F, Q
 from django.conf import settings
 from apps.common.models import TimeStampedModel
 from apps.products.models import Product
+from apps.products.constants import STATUS_PUBLISHED
 from decimal import Decimal
 
 
@@ -14,23 +15,56 @@ class Cart(TimeStampedModel):
     def __str__(self):
         return f"Cart for {self.user.email}"
 
+    def get_valid_items(self):
+        """
+        Get only cart items with available products.
+        Filters out deleted or unpublished products.
+        """
+        return self.items.filter(
+            product__is_deleted=False,
+            product__status=STATUS_PUBLISHED,
+        )
+
+    def get_unavailable_items(self):
+        """
+        Get cart items with unavailable products.
+        Useful for showing warnings to user.
+        """
+        return self.items.filter(
+            Q(product__is_deleted=True) | ~Q(product__status=STATUS_PUBLISHED)
+        )
+
     @property
     def total_items(self) -> int:
         """
-        Get total number of items in cart using DB aggregation.
-        Single query instead of Python iteration.
+        Get total number of valid items in cart.
+        Excludes deleted/unpublished products.
         """
-        result = self.items.aggregate(total=Sum("quantity"))
+        result = self.get_valid_items().aggregate(total=Sum("quantity"))
         return result["total"] or 0
 
     @property
     def subtotal(self) -> Decimal:
         """
-        Calculate cart subtotal using DB aggregation.
-        Single query with F() expression for price * quantity.
+        Calculate cart subtotal for valid items only.
+        Excludes deleted/unpublished products.
         """
-        result = self.items.aggregate(total=Sum(F("quantity") * F("product__price")))
+        result = self.get_valid_items().aggregate(
+            total=Sum(F("quantity") * F("product__price"))
+        )
         return Decimal(str(result["total"] or 0))
+
+    @property
+    def has_unavailable_items(self) -> bool:
+        """Check if cart has any unavailable products."""
+        return self.get_unavailable_items().exists()
+
+    def remove_unavailable_items(self) -> int:
+        """
+        Remove cart items with deleted/unpublished products.
+        Returns the number of items removed.
+        """
+        return self.get_unavailable_items().delete()[0]
 
     def clear(self):
         self.items.all().delete()
@@ -49,7 +83,22 @@ class CartItem(TimeStampedModel):
 
     @property
     def total_price(self):
+        """Calculate total price, handling deleted products."""
+        if self.product.is_deleted:
+            return Decimal("0")
         return self.product.price * self.quantity
+
+    @property
+    def is_available(self) -> bool:
+        """Check if the cart item's product is still available."""
+        return (
+            not self.product.is_deleted
+            and self.product.status == STATUS_PUBLISHED
+            and (
+                not hasattr(self.product, "inventory")
+                or self.product.inventory.is_in_stock
+            )
+        )
 
     def save(self, *args, **kwargs):
         # Validate quantity against available stock

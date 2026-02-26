@@ -1,6 +1,7 @@
 from django.core.mail import send_mail
 from django.conf import settings
-from apps.accounts.models import EmailVerificationToken
+from django.db import transaction
+from apps.accounts.models import EmailVerificationToken, User
 from apps.accounts import constants
 
 
@@ -38,13 +39,17 @@ class EmailService:
         return token
 
     @staticmethod
+    @transaction.atomic
     def verify_email(token_value):
         """
         Verify email using token.
         Returns (success: bool, message: str, user: User|None)
         """
         try:
-            token = EmailVerificationToken.objects.get(token=token_value)
+            # Lock the token row
+            token = EmailVerificationToken.objects.select_for_update().get(
+                token=token_value
+            )
 
             if not token.is_valid():
                 if token.is_used:
@@ -55,8 +60,8 @@ class EmailService:
             # Mark token as used
             token.mark_as_used()
 
-            # Mark user email as verified
-            user = token.user
+            # Mark user email as verified with database-level locking
+            user = User.objects.select_for_update().get(pk=token.user_id)
             user.email_verified = True
             user.save(update_fields=["email_verified"])
 
@@ -81,3 +86,39 @@ class EmailService:
         EmailService.send_verification_email(user)
 
         return True, "Verification email sent"
+
+    @staticmethod
+    def send_password_reset_email(user, reset_url, expiry_hours):
+        """Send password reset email"""
+        subject = constants.EMAIL_PASSWORD_RESET_SUBJECT
+        message = constants.EMAIL_PASSWORD_RESET_TEMPLATE.format(
+            email=user.email,
+            reset_url=reset_url,
+            expiry_hours=expiry_hours,
+        )
+
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
+
+    @staticmethod
+    def send_email_change_email(new_email, verification_url, expiry_hours):
+        """Send email change verification email to the NEW address"""
+        subject = constants.EMAIL_CHANGE_SUBJECT
+        message = constants.EMAIL_CHANGE_TEMPLATE.format(
+            new_email=new_email,
+            verification_url=verification_url,
+            expiry_hours=expiry_hours,
+        )
+
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [new_email],
+            fail_silently=False,
+        )

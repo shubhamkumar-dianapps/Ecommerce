@@ -5,10 +5,12 @@ DRY principle: Extract common view logic into reusable mixins.
 """
 
 from typing import Any
+from django.db import transaction
 from rest_framework.response import Response
 from rest_framework import status
 from apps.accounts.services import EmailService, AuditService
 from apps.accounts import constants
+from apps.accounts.serializer_mixins import PasswordConfirmationMixin  # noqa: F401
 
 
 class EmailVerificationMixin:
@@ -20,12 +22,13 @@ class EmailVerificationMixin:
 
     def send_verification_email(self, user) -> None:
         """
-        Send verification email to user.
+        Send verification email to user after transaction commits.
 
         Args:
             user: User instance to send email to
         """
-        EmailService.send_verification_email(user)
+        # Use on_commit to ensure email is only sent if DB transaction succeeds
+        transaction.on_commit(lambda: EmailService.send_verification_email(user))
 
 
 class AuditLoggingMixin:
@@ -50,8 +53,8 @@ class RegistrationMixin(EmailVerificationMixin, AuditLoggingMixin):
     Combined mixin for registration views.
 
     Handles:
-    - Email verification sending
-    - Audit logging
+    - Email verification sending (Atomic)
+    - Audit logging (Atomic)
     - Standardized response format
     """
 
@@ -103,7 +106,7 @@ class RegistrationMixin(EmailVerificationMixin, AuditLoggingMixin):
         """
         user = serializer.save()
 
-        # Send verification email
+        # Send verification email (scheduled for after commit)
         self.send_verification_email(user)
 
         # Log account creation
@@ -111,9 +114,10 @@ class RegistrationMixin(EmailVerificationMixin, AuditLoggingMixin):
 
         return user
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
-        Override create to provide standardized response.
+        Override create to provide standardized response and atomicity.
 
         Args:
             request: HTTP request
